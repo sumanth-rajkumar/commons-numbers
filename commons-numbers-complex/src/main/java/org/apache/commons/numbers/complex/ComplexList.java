@@ -35,7 +35,20 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     private static final String SIZE_MSG = ", Size: ";
     /** TODO. */
     private static final String INDEX_MSG = "Index: ";
-
+    /** TODO. **/
+    private static final String ARRAY_FORMAT_START = "[";
+    /** TODO. */
+    private static final String ARRAY_SEP = ";";
+    /** TODO. */
+    private static final String ARRAY_FORMAT_END = "]";
+    /** TODO. */
+    private static final int TO_STRING_SIZE = 64;
+    /** TODO. */
+    private static final char FORMAT_START = '(';
+    /** TODO. */
+    private static final char FORMAT_END = ')';
+    /** TODO. */
+    private static final char FORMAT_SEP = ',';
     /** TODO. */
     private double[] realParts;
     /** TODO. */
@@ -57,7 +70,6 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     public int size() {
         return size;
     }
-
 
     public void ensureCapacity(int minCapacity) {
         if (minCapacity > realParts.length &&
@@ -233,7 +245,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
     public static ComplexList parse(String s) {
-        String[] strings = s.split(";");
+        String[] strings = s.split(ARRAY_FORMAT_START + ARRAY_SEP + ARRAY_FORMAT_END);
         ComplexList r = new ComplexList(strings.length);
         for (String str : strings) {
             Complex com = Complex.parse(str);
@@ -437,6 +449,56 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return r;
     }
 
+    public Complex addReal(int index, double addend) {
+        rangeCheck(index);
+        return Complex.ofCartesian(this.realParts[index] + addend,
+            this.imaginaryParts[index]);
+    }
+
+    public ComplexList addReal(double addend) {
+        return addReal(0, size, addend);
+    }
+
+    public ComplexList addReal(int startIndex, int length, double addend) {
+        rangeCheckForSubList(startIndex, length);
+        ComplexList r = new ComplexList(length);
+        if (length == 0) {
+            return r;
+        }
+        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
+        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
+        for (int i = 0; i < length; i++) {
+            r.realParts[i] += addend;
+        }
+        r.size = length;
+        return r;
+    }
+
+    public Complex addImaginary(int index, double addend) {
+        rangeCheck(index);
+        return Complex.ofCartesian(this.realParts[index],
+            this.imaginaryParts[index] + addend);
+    }
+
+    public ComplexList addImaginary(double addend) {
+        return  addImaginary(0, size, addend);
+    }
+
+    public ComplexList addImaginary(int startIndex, int length, double addend) {
+        rangeCheckForSubList(startIndex, length);
+        ComplexList r = new ComplexList(length);
+        if (length == 0) {
+            return r;
+        }
+        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
+        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
+        for (int i = 0; i < length; i++) {
+            r.imaginaryParts[i] += addend;
+        }
+        r.size = length;
+        return r;
+    }
+
     public Complex subtract(int index, Complex addend) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index] - addend.real(),
@@ -459,25 +521,17 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return addition(startIndex, length, -realAddend, -imgAddend);
     }
 
-    public Complex subtractFrom(int index, Complex addend) {
+    public Complex subtract(int index, double subtrahend) {
         rangeCheck(index);
-        return Complex.ofCartesian(addend.real() - this.realParts[index],
-            addend.imag() - this.imaginaryParts[index]);
+        return Complex.ofCartesian(subtrahend - this.realParts[index],
+            this.imaginaryParts[index]);
     }
 
-    public ComplexList subtractFrom(int startIndex, int length, Complex addend) {
-        return subtractFrom(startIndex, length, -addend.real(), -addend.imag());
+    public ComplexList subtract(double subtrahend) {
+        return subtract(0, size, subtrahend);
     }
 
-    public ComplexList subtractFrom(Complex addend) {
-        return subtractFrom(0, size, -addend.real(), -addend.imag());
-    }
-
-    public ComplexList subtractFrom(double realAddend, double imgAddend) {
-        return subtractFrom(0, size, -realAddend, -imgAddend);
-    }
-
-    public ComplexList subtractFrom(int startIndex, int length, double realAddend, double imgAddend) {
+    public ComplexList subtract(int startIndex, int length, double subtrahend) {
         rangeCheckForSubList(startIndex, length);
         ComplexList r = new ComplexList(length);
         if (length == 0) {
@@ -486,13 +540,73 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
         System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
         for (int i = 0; i < length; i++) {
-            r.realParts[i] = realAddend - r.realParts[i];
-            r.imaginaryParts[i] = imgAddend - r.imaginaryParts[i];
+            r.realParts[i] = subtrahend - r.realParts[i];
         }
         r.size = length;
         return r;
     }
 
+    public Complex subtractImaginary(int index, double subtrahend) {
+        rangeCheck(index);
+        return Complex.ofCartesian(this.realParts[index],
+            subtrahend - this.imaginaryParts[index]);
+    }
+    public ComplexList subtractImaginary(double subtrahend) {
+        return subtractImaginary(0, size, subtrahend);
+    }
+
+    public ComplexList subtractImaginary(int startIndex, int length, double subtrahend) {
+        rangeCheckForSubList(startIndex, length);
+        ComplexList r = new ComplexList(length);
+        if (length == 0) {
+            return r;
+        }
+        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
+        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
+        for (int i = 0; i < length; i++) {
+            r.imaginaryParts[i] = subtrahend - r.imaginaryParts[i];
+        }
+        r.size = length;
+        return r;
+    }
+    public Complex subtractFrom(int index, Complex subtrahend) {
+        rangeCheck(index);
+        return Complex.ofCartesian(subtrahend.real() - this.realParts[index],
+            subtrahend.imag() - this.imaginaryParts[index]);
+    }
+
+    public ComplexList subtractFrom(int startIndex, int length, Complex subtrahend) {
+        return subtractFrom(startIndex, length, -subtrahend.real(), -subtrahend.imag());
+    }
+
+    public ComplexList subtractFrom(Complex subtrahend) {
+        return subtractFrom(0, size, -subtrahend.real(), -subtrahend.imag());
+    }
+
+    public ComplexList subtractFrom(double realSubtrahend, double imagSubtrahend) {
+        return subtractFrom(0, size, -realSubtrahend, -imagSubtrahend);
+    }
+
+    public ComplexList subtractFrom(int startIndex, int length, double realSubtrahend, double imagSubtrahend) {
+        rangeCheckForSubList(startIndex, length);
+        ComplexList r = new ComplexList(length);
+        if (length == 0) {
+            return r;
+        }
+        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
+        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
+        for (int i = 0; i < length; i++) {
+            r.realParts[i] = realSubtrahend - r.realParts[i];
+            r.imaginaryParts[i] = imagSubtrahend - r.imaginaryParts[i];
+        }
+        r.size = length;
+        return r;
+    }
+
+    //TODO
+    public Complex multiply(Complex factor) {
+        return null;
+    }
 
     public Complex multiply(int index, double factor) {
         rangeCheck(index);
@@ -526,7 +640,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
     public ComplexList multiplyImaginary(double factor) {
-        return multiply(0, size, factor);
+        return multiplyImaginary(0, size, factor);
     }
 
     public ComplexList multiplyImaginary(int startIndex, int length, double factor) {
@@ -543,6 +657,11 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         }
         r.size = length;
         return r;
+    }
+
+    //TODO
+    public Complex divide(Complex divisor) {
+        return null;
     }
 
     public Complex divide(int index, double divisor) {
@@ -579,6 +698,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return divideImaginary(0, size, divisor);
     }
 
+
     public ComplexList divideImaginary(int startIndex, int length, double divisor) {
         rangeCheckForSubList(startIndex, length);
         ComplexList r = new ComplexList(length);
@@ -594,4 +714,347 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         r.size = length;
         return r;
     }
+
+    //TODO
+    public Complex exp(int index) {
+        return null;
+    }
+
+    public ComplexList exp() {
+        return exp(0, size);
+    }
+
+    //TODO
+    public ComplexList exp(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex log(int index) {
+        return null;
+    }
+
+    public ComplexList log() {
+        return log(0, size);
+    }
+
+    //TODO
+    public ComplexList log(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex log10(int index) {
+        return null;
+    }
+
+    public ComplexList log10() {
+        return log10(0, size);
+    }
+
+    //TODO
+    public ComplexList log10(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex pow(int index, Complex x) {
+        return null;
+    }
+    public ComplexList pow(Complex x) {
+        return pow(0, size, x);
+    }
+
+    //TODO
+    public ComplexList pow(int startIndex, int length, Complex x) {
+        return null;
+    }
+
+    //TODO
+    public Complex pow(int index, double x) {
+        return null;
+    }
+
+    public ComplexList pow(double x) {
+        return pow(0, size, x);
+    }
+
+    //TODO
+    public ComplexList pow(int startIndex, int length, double x) {
+        return null;
+    }
+
+    //TODO
+    public Complex sqrt(int index) {
+        return null;
+    }
+
+    public ComplexList sqrt() {
+        return sqrt(0, size);
+    }
+
+    //TODO
+    public ComplexList sqrt(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex sin(int index) {
+        return null;
+    }
+
+    public ComplexList sin() {
+        return sin(0, size);
+    }
+
+    //TODO
+    public ComplexList sin(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex cos(int index) {
+        return null;
+    }
+
+    public ComplexList cos() {
+        return cos(0, size);
+    }
+
+    //TODO
+    public ComplexList cos(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex tan(int index) {
+        return null;
+    }
+
+    public ComplexList tan() {
+        return tan(0, size);
+    }
+
+    //TODO
+    public ComplexList tan(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex asin(int index) {
+        return null;
+    }
+
+    public ComplexList asin() {
+        return asin(0, size);
+    }
+
+    //TODO
+    public ComplexList asin(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex acos(int index) {
+        return null;
+    }
+
+    public ComplexList acos() {
+        return acos(0, size);
+    }
+
+    //TODO
+    public ComplexList acos(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex atan(int index) {
+        return null;
+    }
+
+    public ComplexList atan() {
+        return atan(0, size);
+    }
+
+    //TODO
+    public ComplexList atan(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex sinh(int index) {
+        return null;
+    }
+
+    public ComplexList sinh() {
+        return sinh(0, size);
+    }
+
+    //TODO
+    public ComplexList sinh(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex cosh(int index) {
+        return null;
+    }
+
+    public ComplexList cosh() {
+        return cosh(0, size);
+    }
+
+    //TODO
+    public ComplexList cosh(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex tanh(int index) {
+        return null;
+    }
+
+    public ComplexList tanh() {
+        return tanh(0, size);
+    }
+
+    //TODO
+    public ComplexList tanh(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex asinh(int index) {
+        return null;
+    }
+
+    public ComplexList asinh() {
+        return asinh(0, size);
+    }
+
+    //TODO
+    public ComplexList asinh(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex acosh(int index) {
+        return null;
+    }
+
+    public ComplexList acosh() {
+        return acosh(0, size);
+    }
+
+    //TODO
+    public ComplexList acosh(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public Complex atanh(int index) {
+        return null;
+    }
+
+    public ComplexList atanh() {
+        return atanh(0, size);
+    }
+
+    //TODO
+    public ComplexList atanh(int startIndex, int length) {
+        return null;
+    }
+
+    //TODO
+    public ComplexList nthRoot(int index, int n) {
+        return null;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (other instanceof ComplexList) {
+            final ComplexList c = (ComplexList) other;
+            if (this.size != c.size) {
+                return false;
+            }
+            return equals(this.realParts, c.realParts, size) &&
+                equals(this.imaginaryParts, c.imaginaryParts, size);
+        }
+        return false;
+    }
+
+    public static boolean equals(double[] a, double[] a2, int length) {
+        if (a == a2) {
+            return true;
+        }
+        if (a == null || a2 == null) {
+            return false;
+        }
+        for (int i = 0; i < length; i++) {
+            if (Double.doubleToLongBits(a[i]) != Double.doubleToLongBits(a2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 31 * size;
+        result = 31 * result + hashCode(this.realParts, size);
+        return 31 * result + hashCode(this.imaginaryParts, size);
+    }
+
+    public static int hashCode(double[] a, int length) {
+        if (a == null) {
+            return 0;
+        }
+        int result = 1;
+        for (int i = 0; i < length; i++) {
+            long bits = Double.doubleToLongBits(a[i]);
+            result = 31 * result + (int)(bits ^ (bits >>> 32));
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return toString(0, size);
+    }
+
+    public String toString(int startIndex, int length) {
+        StringBuilder builder = new StringBuilder(TO_STRING_SIZE * length);
+        builder.append(ARRAY_FORMAT_START);
+        if (length > 0) {
+            int len = startIndex + length - 1;
+            for (int i = startIndex; i < len; i++) {
+                builder.append(FORMAT_START)
+                    .append(this.realParts[i]).append(FORMAT_SEP)
+                    .append(this.imaginaryParts[i])
+                    .append(FORMAT_END)
+                    .append(ARRAY_SEP);
+            }
+            builder.append(FORMAT_START)
+                .append(this.realParts[len]).append(FORMAT_SEP)
+                .append(this.imaginaryParts[len])
+                .append(FORMAT_END);
+        }
+        return builder.append(ARRAY_FORMAT_END).toString();
+    }
+
+    public String toString(int index) {
+        rangeCheck(index);
+        return new StringBuilder(TO_STRING_SIZE)
+            .append(FORMAT_START)
+            .append(this.realParts[index]).append(FORMAT_SEP)
+            .append(this.imaginaryParts[index])
+            .append(FORMAT_END).toString();
+    }
 }
+
+

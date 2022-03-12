@@ -3296,7 +3296,7 @@ public final class Complex implements Serializable  {
      * @param d Value.
      * @return {@code true} if {@code d} is negative.
      */
-    private static boolean negative(double d) {
+    static boolean negative(double d) {
         return d < 0 || Double.doubleToLongBits(d) == NEGATIVE_ZERO_LONG_BITS;
     }
 
@@ -3525,7 +3525,7 @@ public final class Complex implements Serializable  {
      * @see <a href="https://www.netlib.org/fdlibm/e_hypot.c">fdlibm e_hypot.c</a>
      * @see <a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=7130085">JDK-7130085 : Port fdlibm hypot to Java</a>
      */
-    private static double hypot(double x, double y) {
+    static double hypot(double x, double y) {
         // Differences to the fdlibm reference:
         //
         // 1. fdlibm orders the two parts using the magnitude of the upper 32-bits.

@@ -24,7 +24,7 @@ import java.util.List;
 import static org.apache.commons.numbers.complex.Complex.hypot;
 import static org.apache.commons.numbers.complex.Complex.negative;
 
-public final class ComplexList extends AbstractList<Complex> implements List<Complex> {
+public class ComplexList extends AbstractList<Complex> implements List<Complex> {
     /** TODO. */
     private static final double[] DEFAULT_EMPTY = {};
     /** TODO. */
@@ -50,9 +50,11 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     /** TODO. */
     private static final char FORMAT_SEP = ',';
     /** TODO. */
-    private double[] realParts;
+    private static final String PARSER_REGEX = "[\\[;\\]]";
     /** TODO. */
-    private double[] imaginaryParts;
+    protected double[] realParts;
+    /** TODO. */
+    protected double[] imaginaryParts;
     /** TODO. */
     private int size;
 
@@ -66,12 +68,58 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         imaginaryParts = new double[capacity];
     }
 
+    protected ComplexList(double[] real, double[] img, int size) {
+        realParts = real;
+        imaginaryParts = img;
+        this.size = size;
+    }
+
+    /** TODO. */
     @Override
     public int size() {
         return size;
     }
 
-    public void ensureCapacity(int minCapacity) {
+    /** TODO.
+     * @param startIndex
+     * @param length
+     * @param copy
+     * @return dest
+     **/
+    protected double[] getDestinationRealPart(int startIndex, int length, boolean copy) {
+        return this.realParts;
+    }
+
+    /** TODO.
+     * @param startIndex
+     * @param length
+     * @param copy
+     * @return dest
+     **/
+    protected double[] getDestinationImaginaryPart(int startIndex, int length, boolean copy) {
+        return this.imaginaryParts;
+    }
+
+    /** TODO.
+     * @param startIndex
+     * @param length
+     * @return dest
+     **/
+    protected int getDestinationStartIndex(int startIndex, int length) {
+        return startIndex;
+    }
+
+    /** TODO.
+     * @param real
+     * @param img
+     * @param length
+     * @return dest
+     **/
+    protected  ComplexList getComplexList(double[] real, double[] img, int length) {
+        return this;
+    }
+
+    public final void ensureCapacity(int minCapacity) {
         if (minCapacity > realParts.length &&
             !(realParts == DEFAULT_EMPTY &&
             minCapacity <= DEFAULT_CAPACITY)) {
@@ -136,25 +184,37 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
 
 
     @Override
-    public Complex get(int index) {
+    public final Complex get(int index) {
         return Complex.ofCartesian(realParts[index], imaginaryParts[index]);
     }
 
     @Override
-    public boolean add(Complex element) {
+    public final boolean add(Complex element) {
+        return add(element.getReal(), element.getImaginary());
+    }
+
+    public final boolean add(double real, double imag) {
         modCount++;
         final int s;
         if ((s = size) == (this.realParts).length) {
             grow();
         }
-        this.realParts[size] = element.getReal();
-        this.imaginaryParts[size] = element.getImaginary();
+        this.realParts[size] = real;
+        this.imaginaryParts[size] = imag;
         size = s + 1;
         return true;
     }
 
+    public final boolean addPolar(double rho, double theta) {
+        return add(rho * Math.cos(theta), rho * Math.sin(theta));
+    }
+
+    public final boolean addCis(double theta) {
+        return add(Math.cos(theta), Math.sin(theta));
+    }
+
     @Override
-    public void add(int index, Complex element) {
+    public final void add(int index, Complex element) {
         rangeCheck(index);
         modCount++;
         final int s;
@@ -173,7 +233,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
 
-    public void addAll(double[] real, double[] imaginary) {
+    public final void addAll(double[] real, double[] imaginary) {
         rangeCheckForRealAndImaginary(real.length, imaginary.length);
 
         if (real.length == 0) {
@@ -245,9 +305,12 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
     public static ComplexList parse(String s) {
-        String[] strings = s.split(ARRAY_FORMAT_START + ARRAY_SEP + ARRAY_FORMAT_END);
+        String[] strings = s.split(PARSER_REGEX);
         ComplexList r = new ComplexList(strings.length);
         for (String str : strings) {
+            if (str.isEmpty()) {
+                continue;
+            }
             Complex com = Complex.parse(str);
             r.add(com);
         }
@@ -255,38 +318,36 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
     // public double getReal()
-    public double getReal(int index) {
+    public final double getReal(int index) {
         rangeCheck(index);
         return realParts[index];
     }
 
-    public double[] getRealList(int index, int length) {
+    public final double[] getRealList(int index, int length) {
         rangeCheckForSubList(index, length);
         double[] result = new double[length];
         System.arraycopy(realParts, index, result, 0, length);
         return result;
     }
 
-    // public double getImaginary()
-    public double getImaginary(int index) {
+    public final double getImaginary(int index) {
         rangeCheck(index);
         return imaginaryParts[index];
     }
 
-    public double[] getImaginaryList(int index, int length) {
+    public final double[] getImaginaryList(int index, int length) {
         rangeCheckForSubList(index, length);
         double[] result = new double[length];
         System.arraycopy(imaginaryParts, index, result, 0, length);
         return result;
     }
 
-    //public double abs() {
-    public double abs(int index) {
+    public final double abs(int index) {
         rangeCheck(index);
         return hypot(this.realParts[index], this.imaginaryParts[index]);
     }
 
-    public double[] absList(int index, int length) {
+    public final double[] absList(int index, int length) {
         rangeCheckForSubList(index, length);
         double[] absResult = new double[length];
         for (int i = 0; i < length; i++) {
@@ -295,13 +356,12 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return absResult;
     }
 
-    //public double arg()
-    public double arg(int index) {
+    public final double arg(int index) {
         rangeCheck(index);
         return Math.atan2(this.imaginaryParts[index], this.realParts[index]);
     }
 
-    public double[] argList(int index, int length) {
+    public final double[] argList(int index, int length) {
         rangeCheckForSubList(index, length);
         double[] argResult = new double[length];
         for (int i = 0; i < length; i++) {
@@ -310,8 +370,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return argResult;
     }
 
-    //public double norm()
-    public double norm(int index) {
+    public final double norm(int index) {
         rangeCheck(index);
         if (isInfinite(index)) {
             return Double.POSITIVE_INFINITY;
@@ -319,7 +378,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return this.realParts[index] * this.realParts[index] + this.imaginaryParts[index] * this.imaginaryParts[index];
     }
 
-    public boolean isNaN(int index) {
+    public final boolean isNaN(int index) {
         rangeCheck(index);
         if (Double.isNaN(this.realParts[index]) || Double.isNaN(this.imaginaryParts[index])) {
             return !isInfinite(index);
@@ -327,69 +386,66 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return false;
     }
 
-    public boolean isInfinite(int index) {
+    public final boolean isInfinite(int index) {
         rangeCheck(index);
         return Double.isInfinite(this.realParts[index]) || Double.isInfinite(this.imaginaryParts[index]);
     }
 
-    public boolean isFinite(int index) {
+    public final boolean isFinite(int index) {
         rangeCheck(index);
         return Double.isFinite(this.realParts[index]) && Double.isFinite(this.imaginaryParts[index]);
     }
 
-    public ComplexList conj() {
+    public final ComplexList conj() {
         return this.conj(0, size);
     }
 
-    public Complex conj(int index) {
+    public final Complex conj(int index) {
         rangeCheck(index);
         return Complex.ofCartesian(realParts[index], -imaginaryParts[index]);
     }
 
-    public ComplexList conj(int startIndex, int length) {
+    public final ComplexList conj(int startIndex, int length) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, true);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationImaginaryPart[i] = -this.imaginaryParts[i + offset];
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.imaginaryParts[i] = -r.imaginaryParts[i];
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
-    public ComplexList negate() {
+    public final ComplexList negate() {
         return this.negate(0, size);
     }
 
-    public Complex negate(int index) {
+    public final Complex negate(int index) {
         rangeCheck(index);
         return Complex.ofCartesian(-realParts[index], -imaginaryParts[index]);
     }
 
-    public ComplexList negate(int startIndex, int length) {
+    public final ComplexList negate(int startIndex, int length) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = -this.realParts[i + offset];
+            destinationImaginaryPart[i] = -this.imaginaryParts[i + offset];
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] = -r.realParts[i];
-            r.imaginaryParts[i] = -r.imaginaryParts[i];
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
-    public ComplexList proj() {
+    public final ComplexList proj() {
         return this.proj(0, size);
     }
 
-    public Complex proj(int index) {
+    public final Complex proj(int index) {
         rangeCheck(index);
         if (isInfinite(index)) {
             return Complex.ofCartesian(Double.POSITIVE_INFINITY, Math.copySign(0.0, imaginaryParts[index]));
@@ -397,582 +453,567 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return Complex.ofCartesian(realParts[index], imaginaryParts[index]);
     }
 
-    public ComplexList proj(int startIndex, int length) {
+    public final ComplexList proj(int startIndex, int length) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
-        }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            if (isInfinite(startIndex + i)) {
-                r.realParts[i] = Double.POSITIVE_INFINITY;
-                r.imaginaryParts[i] = Math.copySign(0.0,   r.imaginaryParts[i]);
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            if (isInfinite(i + offset)) {
+                destinationRealPart[i] = Double.POSITIVE_INFINITY;
+                destinationImaginaryPart[i] = Math.copySign(0.0,   this.imaginaryParts[i + offset]);
+            } else {
+                destinationRealPart[i] = this.realParts[i + offset];
+                destinationImaginaryPart[i] = this.imaginaryParts[i + offset];
             }
         }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
-    public Complex addition(int index, Complex addend) {
+    public final Complex addition(int index, Complex addend) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index] + addend.real(),
             this.imaginaryParts[index] + addend.imag());
     }
 
-    public ComplexList addition(int startIndex, int length, Complex addend) {
+    public final ComplexList addition(int startIndex, int length, Complex addend) {
         return addition(startIndex, length, addend.real(), addend.imag());
     }
 
-    public ComplexList addition(Complex addend) {
+    public final ComplexList addition(Complex addend) {
         return addition(0, size, addend.real(), addend.imag());
     }
 
-    public ComplexList addition(double realAddend, double imgAddend) {
+    public final ComplexList addition(double realAddend, double imgAddend) {
         return addition(0, size, realAddend, imgAddend);
     }
 
-    public ComplexList addition(int startIndex, int length, double realAddend, double imgAddend) {
+    public final ComplexList addition(int startIndex, int length, double realAddend, double imgAddend) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = this.realParts[i + offset] + realAddend;
+            destinationImaginaryPart[i] = this.imaginaryParts[i + offset] + imgAddend;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] += realAddend;
-            r.imaginaryParts[i] += imgAddend;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
-    public Complex addReal(int index, double addend) {
+    public final Complex addReal(int index, double addend) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index] + addend,
             this.imaginaryParts[index]);
     }
 
-    public ComplexList addReal(double addend) {
+    public final ComplexList addReal(double addend) {
         return addReal(0, size, addend);
     }
 
-    public ComplexList addReal(int startIndex, int length, double addend) {
+    public final ComplexList addReal(int startIndex, int length, double addend) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, true);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = this.realParts[i + offset] + addend;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] += addend;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
+
     }
 
-    public Complex addImaginary(int index, double addend) {
+    public final Complex addImaginary(int index, double addend) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index],
             this.imaginaryParts[index] + addend);
     }
 
-    public ComplexList addImaginary(double addend) {
+    public final ComplexList addImaginary(double addend) {
         return  addImaginary(0, size, addend);
     }
 
-    public ComplexList addImaginary(int startIndex, int length, double addend) {
+    public final ComplexList addImaginary(int startIndex, int length, double addend) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, true);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationImaginaryPart[i] = this.imaginaryParts[i + offset] + addend;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.imaginaryParts[i] += addend;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
+
     }
 
-    public Complex subtract(int index, Complex addend) {
+    public final Complex subtract(int index, Complex addend) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index] - addend.real(),
             this.imaginaryParts[index] - addend.imag());
     }
 
-    public ComplexList subtract(int startIndex, int length, Complex addend) {
+    public final ComplexList subtract(int startIndex, int length, Complex addend) {
         return addition(startIndex, length, -addend.real(), -addend.imag());
     }
 
-    public ComplexList subtract(Complex addend) {
+    public final ComplexList subtract(Complex addend) {
         return addition(0, size, -addend.real(), -addend.imag());
     }
 
-    public ComplexList subtract(double realAddend, double imgAddend) {
+    public final ComplexList subtract(double realAddend, double imgAddend) {
         return addition(0, size, -realAddend, -imgAddend);
     }
 
-    public ComplexList subtract(int startIndex, int length, double realAddend, double imgAddend) {
+    public final ComplexList subtract(int startIndex, int length, double realAddend, double imgAddend) {
         return addition(startIndex, length, -realAddend, -imgAddend);
     }
 
-    public Complex subtract(int index, double subtrahend) {
+    public final Complex subtract(int index, double subtrahend) {
         rangeCheck(index);
         return Complex.ofCartesian(subtrahend - this.realParts[index],
             this.imaginaryParts[index]);
     }
 
-    public ComplexList subtract(double subtrahend) {
+    public final ComplexList subtract(double subtrahend) {
         return subtract(0, size, subtrahend);
     }
 
-    public ComplexList subtract(int startIndex, int length, double subtrahend) {
+    public final ComplexList subtract(int startIndex, int length, double subtrahend) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, true);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = subtrahend - this.realParts[i + offset];
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] = subtrahend - r.realParts[i];
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
+
     }
 
-    public Complex subtractImaginary(int index, double subtrahend) {
+    public final Complex subtractImaginary(int index, double subtrahend) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index],
             subtrahend - this.imaginaryParts[index]);
     }
-    public ComplexList subtractImaginary(double subtrahend) {
+    public final ComplexList subtractImaginary(double subtrahend) {
         return subtractImaginary(0, size, subtrahend);
     }
 
-    public ComplexList subtractImaginary(int startIndex, int length, double subtrahend) {
+    public final ComplexList subtractImaginary(int startIndex, int length, double subtrahend) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, true);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationImaginaryPart[i] = subtrahend - this.imaginaryParts[i + offset];
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.imaginaryParts[i] = subtrahend - r.imaginaryParts[i];
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
-    public Complex subtractFrom(int index, Complex subtrahend) {
+
+    public final Complex subtractFrom(int index, Complex subtrahend) {
         rangeCheck(index);
         return Complex.ofCartesian(subtrahend.real() - this.realParts[index],
             subtrahend.imag() - this.imaginaryParts[index]);
     }
 
-    public ComplexList subtractFrom(int startIndex, int length, Complex subtrahend) {
+    public final ComplexList subtractFrom(int startIndex, int length, Complex subtrahend) {
         return subtractFrom(startIndex, length, -subtrahend.real(), -subtrahend.imag());
     }
 
-    public ComplexList subtractFrom(Complex subtrahend) {
+    public final ComplexList subtractFrom(Complex subtrahend) {
         return subtractFrom(0, size, -subtrahend.real(), -subtrahend.imag());
     }
 
-    public ComplexList subtractFrom(double realSubtrahend, double imagSubtrahend) {
+    public final ComplexList subtractFrom(double realSubtrahend, double imagSubtrahend) {
         return subtractFrom(0, size, -realSubtrahend, -imagSubtrahend);
     }
 
-    public ComplexList subtractFrom(int startIndex, int length, double realSubtrahend, double imagSubtrahend) {
+    public final ComplexList subtractFrom(int startIndex, int length, double realSubtrahend, double imagSubtrahend) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = realSubtrahend - this.realParts[i + offset];
+            destinationImaginaryPart[i] = realSubtrahend - this.imaginaryParts[i + offset];
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] = realSubtrahend - r.realParts[i];
-            r.imaginaryParts[i] = imagSubtrahend - r.imaginaryParts[i];
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
+
     }
 
     //TODO
-    public Complex multiply(Complex factor) {
+    public final Complex multiply(Complex factor) {
         return null;
     }
 
-    public Complex multiply(int index, double factor) {
+    public final Complex multiply(int index, double factor) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index] * factor,
             this.imaginaryParts[index] * factor);
     }
 
-    public ComplexList multiply(double factor) {
+    public final ComplexList multiply(double factor) {
         return multiply(0, size, factor);
     }
 
-    public ComplexList multiply(int startIndex, int length, double factor) {
-        rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+    public final ComplexList multiply(int startIndex, int length, double factor) {
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = this.realParts[i + offset] * factor;
+            destinationImaginaryPart[i] = this.imaginaryParts[i + offset] * factor;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] *= factor;
-            r.imaginaryParts[i] *= factor;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
+
     }
 
-    public Complex multiplyImaginary(int index, double factor) {
+    public final Complex multiplyImaginary(int index, double factor) {
         rangeCheck(index);
         return Complex.ofCartesian(-this.imaginaryParts[index] * factor, this.realParts[index] * factor);
     }
 
-    public ComplexList multiplyImaginary(double factor) {
+    public final ComplexList multiplyImaginary(double factor) {
         return multiplyImaginary(0, size, factor);
     }
 
-    public ComplexList multiplyImaginary(int startIndex, int length, double factor) {
+    public final ComplexList multiplyImaginary(int startIndex, int length, double factor) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = -this.imaginaryParts[i + offset] * factor;
+            destinationImaginaryPart[i] = this.realParts[i + offset] * factor;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] = -r.imaginaryParts[i] * factor;
-            r.imaginaryParts[i] = r.realParts[i] * factor;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
     //TODO
-    public Complex divide(Complex divisor) {
+    public final Complex divide(Complex divisor) {
         return null;
     }
 
-    public Complex divide(int index, double divisor) {
+    public final Complex divide(int index, double divisor) {
         rangeCheck(index);
         return Complex.ofCartesian(this.realParts[index] / divisor, this.imaginaryParts[index] / divisor);
     }
 
-    public ComplexList divide(double divisor) {
+    public final ComplexList divide(double divisor) {
         return divide(0, size, divisor);
     }
 
-    public ComplexList divide(int startIndex, int length, double divisor) {
-        rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+    public final ComplexList divide(int startIndex, int length, double divisor) {
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = this.realParts[i + offset] / divisor;
+            destinationImaginaryPart[i] = this.imaginaryParts[i + offset] / divisor;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] /= divisor;
-            r.imaginaryParts[i] /= divisor;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
+
     }
 
-    public Complex divideImaginary(int index, double divisor) {
+    public final Complex divideImaginary(int index, double divisor) {
         rangeCheck(index);
         return Complex.ofCartesian(this.imaginaryParts[index] / divisor, -this.realParts[index] / divisor);
     }
 
-    public ComplexList divideImaginary(double divisor) {
+    public final ComplexList divideImaginary(double divisor) {
         return divideImaginary(0, size, divisor);
     }
 
-
-    public ComplexList divideImaginary(int startIndex, int length, double divisor) {
+    public final ComplexList divideImaginary(int startIndex, int length, double divisor) {
         rangeCheckForSubList(startIndex, length);
-        ComplexList r = new ComplexList(length);
-        if (length == 0) {
-            return r;
+        double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
+        double[] destinationImaginaryPart = getDestinationRealPart(startIndex, length, false);
+        int s = getDestinationStartIndex(startIndex, length);
+        int offset = startIndex - s;
+        int len = length + s;
+        for (int i = s; i < len; i++) {
+            destinationRealPart[i] = this.imaginaryParts[i + offset] / divisor;
+            destinationImaginaryPart[i] = -this.realParts[i + offset] / divisor;
         }
-        System.arraycopy(this.realParts, startIndex, r.realParts, 0, length);
-        System.arraycopy(this.imaginaryParts, startIndex, r.imaginaryParts, 0, length);
-        for (int i = 0; i < length; i++) {
-            r.realParts[i] = imaginaryParts[i] / divisor;
-            r.imaginaryParts[i] = -realParts[i] / divisor;
-        }
-        r.size = length;
-        return r;
+        return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
     //TODO
-    public Complex exp(int index) {
+    public final Complex exp(int index) {
         return null;
     }
 
-    public ComplexList exp() {
+    public final ComplexList exp() {
         return exp(0, size);
     }
 
     //TODO
-    public ComplexList exp(int startIndex, int length) {
+    public final ComplexList exp(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex log(int index) {
+    public final Complex log(int index) {
         return null;
     }
 
-    public ComplexList log() {
+    public final ComplexList log() {
         return log(0, size);
     }
 
     //TODO
-    public ComplexList log(int startIndex, int length) {
+    public final ComplexList log(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex log10(int index) {
+    public final Complex log10(int index) {
         return null;
     }
 
-    public ComplexList log10() {
+    public final ComplexList log10() {
         return log10(0, size);
     }
 
     //TODO
-    public ComplexList log10(int startIndex, int length) {
+    public final ComplexList log10(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex pow(int index, Complex x) {
+    public final Complex pow(int index, Complex x) {
         return null;
     }
-    public ComplexList pow(Complex x) {
+    public final ComplexList pow(Complex x) {
         return pow(0, size, x);
     }
 
     //TODO
-    public ComplexList pow(int startIndex, int length, Complex x) {
+    public final ComplexList pow(int startIndex, int length, Complex x) {
         return null;
     }
 
     //TODO
-    public Complex pow(int index, double x) {
+    public final Complex pow(int index, double x) {
         return null;
     }
 
-    public ComplexList pow(double x) {
+    public final ComplexList pow(double x) {
         return pow(0, size, x);
     }
 
     //TODO
-    public ComplexList pow(int startIndex, int length, double x) {
+    public final ComplexList pow(int startIndex, int length, double x) {
         return null;
     }
 
     //TODO
-    public Complex sqrt(int index) {
+    public final Complex sqrt(int index) {
         return null;
     }
 
-    public ComplexList sqrt() {
+    public final ComplexList sqrt() {
         return sqrt(0, size);
     }
 
     //TODO
-    public ComplexList sqrt(int startIndex, int length) {
+    public final ComplexList sqrt(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex sin(int index) {
+    public final Complex sin(int index) {
         return null;
     }
 
-    public ComplexList sin() {
+    public final ComplexList sin() {
         return sin(0, size);
     }
 
     //TODO
-    public ComplexList sin(int startIndex, int length) {
+    public final ComplexList sin(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex cos(int index) {
+    public final Complex cos(int index) {
         return null;
     }
 
-    public ComplexList cos() {
+    public final ComplexList cos() {
         return cos(0, size);
     }
 
     //TODO
-    public ComplexList cos(int startIndex, int length) {
+    public final ComplexList cos(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex tan(int index) {
+    public final Complex tan(int index) {
         return null;
     }
 
-    public ComplexList tan() {
+    public final ComplexList tan() {
         return tan(0, size);
     }
 
     //TODO
-    public ComplexList tan(int startIndex, int length) {
+    public final ComplexList tan(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex asin(int index) {
+    public final Complex asin(int index) {
         return null;
     }
 
-    public ComplexList asin() {
+    public final ComplexList asin() {
         return asin(0, size);
     }
 
     //TODO
-    public ComplexList asin(int startIndex, int length) {
+    public final ComplexList asin(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex acos(int index) {
+    public final Complex acos(int index) {
         return null;
     }
 
-    public ComplexList acos() {
+    public final ComplexList acos() {
         return acos(0, size);
     }
 
     //TODO
-    public ComplexList acos(int startIndex, int length) {
+    public final ComplexList acos(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex atan(int index) {
+    public final Complex atan(int index) {
         return null;
     }
 
-    public ComplexList atan() {
+    public final ComplexList atan() {
         return atan(0, size);
     }
 
     //TODO
-    public ComplexList atan(int startIndex, int length) {
+    public final ComplexList atan(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex sinh(int index) {
+    public final Complex sinh(int index) {
         return null;
     }
 
-    public ComplexList sinh() {
+    public final ComplexList sinh() {
         return sinh(0, size);
     }
 
     //TODO
-    public ComplexList sinh(int startIndex, int length) {
+    public final ComplexList sinh(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex cosh(int index) {
+    public final Complex cosh(int index) {
         return null;
     }
 
-    public ComplexList cosh() {
+    public final ComplexList cosh() {
         return cosh(0, size);
     }
 
     //TODO
-    public ComplexList cosh(int startIndex, int length) {
+    public final ComplexList cosh(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex tanh(int index) {
+    public final Complex tanh(int index) {
         return null;
     }
 
-    public ComplexList tanh() {
+    public final ComplexList tanh() {
         return tanh(0, size);
     }
 
     //TODO
-    public ComplexList tanh(int startIndex, int length) {
+    public final ComplexList tanh(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex asinh(int index) {
+    public final Complex asinh(int index) {
         return null;
     }
 
-    public ComplexList asinh() {
+    public final ComplexList asinh() {
         return asinh(0, size);
     }
 
     //TODO
-    public ComplexList asinh(int startIndex, int length) {
+    public final ComplexList asinh(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex acosh(int index) {
+    public final Complex acosh(int index) {
         return null;
     }
 
-    public ComplexList acosh() {
+    public final ComplexList acosh() {
         return acosh(0, size);
     }
 
     //TODO
-    public ComplexList acosh(int startIndex, int length) {
+    public final ComplexList acosh(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public Complex atanh(int index) {
+    public final Complex atanh(int index) {
         return null;
     }
 
-    public ComplexList atanh() {
+    public final ComplexList atanh() {
         return atanh(0, size);
     }
 
     //TODO
-    public ComplexList atanh(int startIndex, int length) {
+    public final ComplexList atanh(int startIndex, int length) {
         return null;
     }
 
     //TODO
-    public ComplexList nthRoot(int index, int n) {
+    public final ComplexList nthRoot(int index, int n) {
         return null;
     }
 
     @Override
-    public boolean equals(Object other) {
+    public final boolean equals(Object other) {
         if (this == other) {
             return true;
         }
@@ -1004,7 +1045,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         int result = 31 * size;
         result = 31 * result + hashCode(this.realParts, size);
         return 31 * result + hashCode(this.imaginaryParts, size);
@@ -1023,11 +1064,11 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return toString(0, size);
     }
 
-    public String toString(int startIndex, int length) {
+    public final String toString(int startIndex, int length) {
         StringBuilder builder = new StringBuilder(TO_STRING_SIZE * length);
         builder.append(ARRAY_FORMAT_START);
         if (length > 0) {
@@ -1047,7 +1088,7 @@ public final class ComplexList extends AbstractList<Complex> implements List<Com
         return builder.append(ARRAY_FORMAT_END).toString();
     }
 
-    public String toString(int index) {
+    public final String toString(int index) {
         rangeCheck(index);
         return new StringBuilder(TO_STRING_SIZE)
             .append(FORMAT_START)

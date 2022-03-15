@@ -1033,11 +1033,11 @@ public final class Complex implements Serializable  {
         return applyUnaryOperator(ComplexFunctions::exp);
     }
 
-    public Complex applyUnaryOperator(ComplexUnaryOperator operator) {
+    public Complex applyUnaryOperator(ComplexFunction operator) {
         return operator.apply(this.real, this.imaginary, CARTESIAN_RESULT);
     }
 
-    public Complex applyBinaryOperator(Complex input, ComplexBinaryOperator operator) {
+    public Complex applyBinaryOperator(Complex input, ComplexBiFunction operator) {
         return operator.apply(this.real, this.imaginary, input.getReal(), input.getImaginary(), CARTESIAN_RESULT);
     }
 

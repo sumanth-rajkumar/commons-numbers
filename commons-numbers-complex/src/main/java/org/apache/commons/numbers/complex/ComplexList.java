@@ -474,31 +474,31 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
 
-    public final Complex applyUnaryOperator(int index, ComplexUnaryOperator operator) {
-        return applyUnaryOperator(index, operator, Complex.CARTESIAN_RESULT);
+    public final Complex forEach(int index, ComplexFunction operator) {
+        return forEach(index, operator, Complex.CARTESIAN_RESULT);
     }
 
-    public final <R> R applyUnaryOperator(int index, ComplexUnaryOperator operator, ComplexResult<R> result) {
+    public final <R> R forEach(int index, ComplexFunction operator, ComplexResult<R> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], result);
     }
 
-    public final Complex applyBinaryOperator(int index, Complex operand, ComplexBinaryOperator operator) {
-        return applyBinaryOperator(index, operand, operator, CARTESIAN_RESULT);
+    public final Complex forEach(int index, Complex operand, ComplexBiFunction operator) {
+        return forEach(index, operand, operator, CARTESIAN_RESULT);
     }
 
-    public final <R> R applyBinaryOperator(int index, Complex operand, ComplexBinaryOperator operator,
-                                           ComplexResult<R> result) {
+    public final <R> R forEach(int index, Complex operand, ComplexBiFunction operator,
+                               ComplexResult<R> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], operand.getReal(),
             operand.getImaginary(), result);
     }
 
 
-    public final ComplexList applyUnaryOperator(ComplexUnaryOperator operator) {
-        return  applyUnaryOperator(0, size, operator);
+    public final ComplexList forEach(ComplexFunction operator) {
+        return  forEach(0, size, operator);
     }
-    public final ComplexList applyUnaryOperator(int startIndex, int length, ComplexUnaryOperator operator) {
+    public final ComplexList forEach(int startIndex, int length, ComplexFunction operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
@@ -516,23 +516,23 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
         return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
-    public final ComplexList applyBinaryOperator(Complex operand, ComplexBinaryOperator operator) {
-        return  applyBinaryOperator(operand.getReal(), operand.getImaginary(), operator);
+    public final ComplexList forEach(Complex operand, ComplexBiFunction operator) {
+        return  forEach(operand.getReal(), operand.getImaginary(), operator);
     }
 
-    public final ComplexList applyBinaryOperator(double realOperand, double imaginaryOperand,
-                                                 ComplexBinaryOperator operator) {
-        return  applyBinaryOperator(0, size, realOperand,  imaginaryOperand, operator);
+    public final ComplexList forEach(double realOperand, double imaginaryOperand,
+                                     ComplexBiFunction operator) {
+        return  forEach(0, size, realOperand,  imaginaryOperand, operator);
     }
 
-    public final ComplexList applyBinaryOperator(int startIndex, int length, Complex operand,
-                                                 ComplexBinaryOperator operator) {
-        return  applyBinaryOperator(startIndex, length, operand.getReal(), operand.getImaginary(),
+    public final ComplexList forEach(int startIndex, int length, Complex operand,
+                                     ComplexBiFunction operator) {
+        return  forEach(startIndex, length, operand.getReal(), operand.getImaginary(),
             operator);
     }
 
-    public final ComplexList applyBinaryOperator(int startIndex, int length, double realOperand,
-                                                 double imaginaryOperand, ComplexBinaryOperator operator) {
+    public final ComplexList forEach(int startIndex, int length, double realOperand,
+                                     double imaginaryOperand, ComplexBiFunction operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
@@ -552,63 +552,63 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
     public final Complex conj(int index) {
-        return applyUnaryOperator(index, ComplexFunctions::conj);
+        return forEach(index, ComplexFunctions::conj);
     }
 
     public final ComplexList conj() {
-        return applyUnaryOperator(0, size, ComplexFunctions::conj);
+        return forEach(0, size, ComplexFunctions::conj);
     }
 
     public final ComplexList conj(int startIndex, int length) {
-        return applyUnaryOperator(startIndex, length, ComplexFunctions::conj);
+        return forEach(startIndex, length, ComplexFunctions::conj);
     }
 
     public final Complex exp(int index) {
-        return applyUnaryOperator(index, ComplexFunctions::exp);
+        return forEach(index, ComplexFunctions::exp);
     }
 
     public final ComplexList exp() {
-        return applyUnaryOperator(0, size, ComplexFunctions::exp);
+        return forEach(0, size, ComplexFunctions::exp);
     }
 
     public final ComplexList exp(int startIndex, int length) {
-        return applyUnaryOperator(startIndex, length, ComplexFunctions::exp);
+        return forEach(startIndex, length, ComplexFunctions::exp);
     }
 
     public final Complex asin(int index) {
-        return applyUnaryOperator(index, ComplexFunctions::asin);
+        return forEach(index, ComplexFunctions::asin);
     }
 
     public final ComplexList asin() {
-        return applyUnaryOperator(0, size, ComplexFunctions::asin);
+        return forEach(0, size, ComplexFunctions::asin);
     }
 
     public final ComplexList asin(int startIndex, int length) {
-        return applyUnaryOperator(startIndex, length, ComplexFunctions::asin);
+        return forEach(startIndex, length, ComplexFunctions::asin);
     }
 
     public final Complex multiply(int index, Complex factor) {
-        return applyBinaryOperator(index, factor, ComplexFunctions::multiply);
+        return forEach(index, factor, ComplexFunctions::multiply);
     }
 
     public final ComplexList multiply(Complex factor) {
-        return applyBinaryOperator(0, size, ComplexFunctions::multiply);
+        return forEach(0, size, ComplexFunctions::multiply);
     }
 
     public final ComplexList multiply(int startIndex, int length, Complex factor) {
-        return applyBinaryOperator(startIndex, length, ComplexFunctions::multiply);
+        return forEach(startIndex, length, ComplexFunctions::multiply);
     }
 
     public final Complex divide(int index, Complex factor) {
-        return applyBinaryOperator(index, factor, ComplexFunctions::divide);
+        return forEach(index, factor, ComplexFunctions::divide);
     }
 
     public final ComplexList divide(Complex factor) {
-        return applyBinaryOperator(0, size, ComplexFunctions::divide);
+        return forEach(0, size, ComplexFunctions::divide);
     }
 
     public final ComplexList divide(int startIndex, int length, Complex factor) {
-        return applyBinaryOperator(startIndex, length, ComplexFunctions::divide);
+        return forEach(startIndex, length, ComplexFunctions::divide);
     }
 
 

@@ -30,7 +30,7 @@ public  interface ComplexResult<R> {
         return (r, i) -> after.apply(apply(r, i));
     }
 
-    default ComplexResult<R> compose(ComplexUnaryOperator before) {
+    default ComplexResult<R> compose(ComplexFunction before) {
         Objects.requireNonNull(before);
         return (r, i) -> before.apply(r, i, (x, y) -> apply(x, y));
     }

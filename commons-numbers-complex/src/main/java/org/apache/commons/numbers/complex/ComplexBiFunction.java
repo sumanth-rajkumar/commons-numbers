@@ -18,6 +18,6 @@
 package org.apache.commons.numbers.complex;
 
 @FunctionalInterface
-public interface ComplexBinaryOperator {
+public interface ComplexBiFunction {
     <R> R apply(double r1, double i1, double r2, double i2, ComplexResult<R> result);
 }

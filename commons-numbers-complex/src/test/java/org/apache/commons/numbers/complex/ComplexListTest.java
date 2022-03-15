@@ -24,11 +24,8 @@ import org.junit.jupiter.api.Test;
 
 public class ComplexListTest {
 
-    /**
-     * Test parse and toString are compatible.
-     */
-    @Test
-    void testParseAndToString() {
+
+    private ComplexList createList() {
         final double[] parts = {Double.NEGATIVE_INFINITY, -1, -0.0, 0.0, 1, Math.PI, Double.POSITIVE_INFINITY,
             Double.NaN};
         ComplexList list = new ComplexList();
@@ -54,10 +51,56 @@ public class ComplexListTest {
         //Assertions.assertEquals(Complex.ofCis(pi), Complex.parse(Complex.ofCis(pi).toString()));
         list.addCis(Math.PI);
 
+        return list;
+    }
+
+    /**
+     * Test parse and toString are compatible.
+     */
+    @Test
+    void testParseAndToString() {
+
+        ComplexList list = createList();
+
         String listToString = list.toString();
 
         ComplexList parsedList = ComplexList.parse(listToString);
 
         Assertions.assertEquals(list, parsedList);
+
+    }
+
+    /**
+     * Test list forEach conj.
+     */
+    @Test
+    void testConj() {
+        final ComplexList list = createList();
+
+        final ComplexList originalCopy = ComplexList.parse(list.toString());
+
+        //conjugate of conjugate - should get back original
+        list.forEach(ComplexFunctions::conj).forEach(ComplexFunctions::conj);
+
+        Assertions.assertEquals(list, originalCopy);
+
+        list.forEach(ComplexFunctions::conj).multiply(Complex.ofCartesian(1, 1));
+    }
+    /**
+     * Test list multiply.
+     */
+    @Test
+    void testMultiplyList() {
+        final Complex x = Complex.ofCartesian(3.0, 4.0);
+        final Complex y = Complex.ofCartesian(5.0, 6.0);
+        final ComplexList list = new ComplexList();
+        list.add(x);
+
+        list.multiply(y);
+
+        final Complex z = list.get(0);
+
+        Assertions.assertEquals(-9.0, z.getReal());
+        Assertions.assertEquals(38.0, z.getImaginary());
     }
 }

@@ -165,7 +165,7 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
     private void rangeCheckForSubList(int index, int length) {
-        if (index < 0 || length < 0 || index + length >= size) {
+        if (index < 0 || length < 0 || index + length > size) {
             throw new IndexOutOfBoundsException(outOfBoundsSubListMsg(index, length));
         }
     }
@@ -592,11 +592,11 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
     public final ComplexList multiply(Complex factor) {
-        return forEach(0, size, ComplexFunctions::multiply);
+        return forEach(0, size, factor.getReal(), factor.getImaginary(), ComplexFunctions::multiply);
     }
 
     public final ComplexList multiply(int startIndex, int length, Complex factor) {
-        return forEach(startIndex, length, ComplexFunctions::multiply);
+        return forEach(startIndex, length, factor.getReal(), factor.getImaginary(), ComplexFunctions::multiply);
     }
 
     public final Complex divide(int index, Complex factor) {
@@ -604,11 +604,11 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
     public final ComplexList divide(Complex factor) {
-        return forEach(0, size, ComplexFunctions::divide);
+        return forEach(0, size, factor.getReal(), factor.getImaginary(), ComplexFunctions::divide);
     }
 
     public final ComplexList divide(int startIndex, int length, Complex factor) {
-        return forEach(startIndex, length, ComplexFunctions::divide);
+        return forEach(startIndex, length, factor.getReal(), factor.getImaginary(), ComplexFunctions::divide);
     }
 
 

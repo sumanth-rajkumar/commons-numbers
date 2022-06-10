@@ -782,6 +782,270 @@ public final class ComplexFunctions {
     public static <R> R ofCartesian(double r, double i, ComplexResult<R> result) {
         return result.apply(r, i);
     }
+    public static <R> R acos(double real, double imaginary, ComplexResult<R> result) {
+// Compute with positive values and determine sign at the end
+        final double x = Math.abs(real);
+        final double y = Math.abs(imaginary);
+        // The result (without sign correction)
+        double re;
+        double im;
+
+        // Handle C99 special cases
+        if (isPosInfinite(x)) {
+            if (isPosInfinite(y)) {
+                re = PI_OVER_4;
+                im = y;
+            } else if (Double.isNaN(y)) {
+                // sign of the imaginary part of the result is unspecified
+                return result.apply(imaginary, real);
+            } else {
+                re = 0;
+                im = Double.POSITIVE_INFINITY;
+            }
+        } else if (Double.isNaN(x)) {
+            if (isPosInfinite(y)) {
+                return result.apply(x, -imaginary);
+            }
+            // No-use of the input constructor
+            return result.apply(Double.NaN, Double.NaN);
+        } else if (isPosInfinite(y)) {
+            re = PI_OVER_2;
+            im = y;
+        } else if (Double.isNaN(y)) {
+            return result.apply(x == 0 ? PI_OVER_2 : y, y);
+        } else {
+            // Special case for real numbers:
+            if (y == 0 && x <= 1) {
+                return result.apply(x == 0 ? PI_OVER_2 : Math.acos(real), -imaginary);
+            }
+
+            final double xp1 = x + 1;
+            final double xm1 = x - 1;
+
+            if (inRegion(x, y, SAFE_MIN, SAFE_MAX)) {
+                final double yy = y * y;
+                final double r = Math.sqrt(xp1 * xp1 + yy);
+                final double s = Math.sqrt(xm1 * xm1 + yy);
+                final double a = 0.5 * (r + s);
+                final double b = x / a;
+
+                if (b <= B_CROSSOVER) {
+                    re = Math.acos(b);
+                } else {
+                    final double apx = a + x;
+                    if (x <= 1) {
+                        re = Math.atan(Math.sqrt(0.5 * apx * (yy / (r + xp1) + (s - xm1))) / x);
+                    } else {
+                        re = Math.atan((y * Math.sqrt(0.5 * (apx / (r + xp1) + apx / (s + xm1)))) / x);
+                    }
+                }
+
+                if (a <= A_CROSSOVER) {
+                    double am1;
+                    if (x < 1) {
+                        am1 = 0.5 * (yy / (r + xp1) + yy / (s - xm1));
+                    } else {
+                        am1 = 0.5 * (yy / (r + xp1) + (s + xm1));
+                    }
+                    im = Math.log1p(am1 + Math.sqrt(am1 * (a + 1)));
+                } else {
+                    im = Math.log(a + Math.sqrt(a * a - 1));
+                }
+            } else {
+                // Hull et al: Exception handling code from figure 6
+                if (y <= (EPSILON * Math.abs(xm1))) {
+                    if (x < 1) {
+                        re = Math.acos(x);
+                        im = y / Math.sqrt(xp1 * (1 - x));
+                    } else {
+                        // This deviates from Hull et al's paper as per
+                        // https://svn.boost.org/trac/boost/ticket/7290
+                        if ((Double.MAX_VALUE / xp1) > xm1) {
+                            // xp1 * xm1 won't overflow:
+                            re = y / Math.sqrt(xm1 * xp1);
+                            im = Math.log1p(xm1 + Math.sqrt(xp1 * xm1));
+                        } else {
+                            re = y / x;
+                            im = LN_2 + Math.log(x);
+                        }
+                    }
+                } else if (y <= SAFE_MIN) {
+                    // Hull et al: Assume x == 1.
+                    // True if:
+                    // E^2 > 8*sqrt(u)
+                    //
+                    // E = Machine epsilon: (1 + epsilon) = 1
+                    // u = Double.MIN_NORMAL
+                    re = Math.sqrt(y);
+                    im = Math.sqrt(y);
+                } else if (EPSILON * y - 1 >= x) {
+                    re = PI_OVER_2;
+                    im = LN_2 + Math.log(y);
+                } else if (x > 1) {
+                    re = Math.atan(y / x);
+                    final double xoy = x / y;
+                    im = LN_2 + Math.log(y) + 0.5 * Math.log1p(xoy * xoy);
+                } else {
+                    re = PI_OVER_2;
+                    final double a = Math.sqrt(1 + y * y);
+                    im = 0.5 * Math.log1p(2 * y * (y + a));
+                }
+            }
+        }
+
+        return result.apply(negative(real) ? Math.PI - re : re,
+            negative(imaginary) ? im : -im);
+    }
+    public static <R> R atanh(double real, double imaginary, ComplexResult<R> result) {
+        // Compute with positive values and determine sign at the end
+        double x = Math.abs(real);
+        double y = Math.abs(imaginary);
+        // The result (without sign correction)
+        double re;
+        double im;
+        // Handle C99 special cases
+        if (Double.isNaN(x)) {
+            if (isPosInfinite(y)) {
+                // The sign of the real part of the result is unspecified
+                return result.apply(0, Math.copySign(PI_OVER_2, imaginary));
+            }
+            // No-use of the input constructor.
+            // Optionally raises the ‘‘invalid’’ floating-point exception, for finite y.
+            return result.apply(Double.NaN, Double.NaN);
+        } else if (Double.isNaN(y)) {
+            if (isPosInfinite(x)) {
+                return result.apply(Math.copySign(0, real), Double.NaN);
+            }
+            if (x == 0) {
+                return result.apply(real, Double.NaN);
+            }
+            // No-use of the input constructor
+            return result.apply(Double.NaN, Double.NaN);
+        } else {
+            // x && y are finite or infinite.
+            // The lower and upper bounds have been copied from boost::math::atanh.
+            // They are different from the safe region for asin and acos.
+            // x >= SAFE_UPPER: (1-x) == -x; x <= SAFE_LOWER: 1 - x^2 = 1
+            if (inRegion(x, y, SAFE_LOWER, SAFE_UPPER)) {
+                // Normal computation within a safe region. minus x plus 1: (-x+1)
+                final double mxp1 = 1 - x;
+                final double yy = y * y;
+                // The definition of real component is:
+                // real = log( ((x+1)^2+y^2) / ((1-x)^2+y^2) ) / 4
+                // This simplifies by adding 1 and subtracting 1 as a fraction:
+                //      = log(1 + ((x+1)^2+y^2) / ((1-x)^2+y^2) - ((1-x)^2+y^2)/((1-x)^2+y^2) ) / 4
+                // real(atanh(z)) == log(1 + 4*x / ((1-x)^2+y^2)) / 4
+                // imag(atanh(z)) == tan^-1 (2y, (1-x)(1+x) - y^2) / 2
+                // imag(atanh(z)) == tan^-1 (2y, (1 - x^2 - y^2) / 2
+                // The division is done at the end of the function.
+                re = Math.log1p(4 * x / (mxp1 * mxp1 + yy));
+                // Modified from boost which does not switch the magnitude of x and y.
+                // The denominator for atan2 is 1 - x^2 - y^2. This can be made more precise if |x| > |y|.
+                final double numerator = 2 * y;
+                double denominator;
+                if (x < y) {
+                    final double tmp = x;
+                    x = y;
+                    y = tmp;
+                }
+                // 1 - x is precise if |x| >= 1
+                if (x >= 1) {
+                    denominator = (1 - x) * (1 + x) - y * y;
+                } else {
+                    // |x| < 1: Use high precision if possible:
+                    // 1 - x^2 - y^2 = -(x^2 + y^2 - 1) Modified from boost to use the custom high precision method.
+                    denominator = -Complex.x2y2m1(x, y);
+                }
+                im = Math.atan2(numerator, denominator);
+            } else {
+                // This section handles exception cases that would normally cause
+                // underflow or overflow in the main formulas.
+                // C99. G.7: Special case for imaginary only numbers
+                if (x == 0) {
+                    if (imaginary == 0) {
+                        return result.apply(real, imaginary);
+                    }
+                    // atanh(iy) = i atan(y)
+                    return result.apply(real, Math.atan(imaginary));
+                }
+                // Real part:
+                // real = Math.log1p(4x / ((1-x)^2 + y^2))
+                // real = Math.log1p(4x / (1 - 2x + x^2 + y^2))
+                // real = Math.log1p(4x / (1 + x(x-2) + y^2))
+                // without either overflow or underflow in the squared terms.
+                if (x >= SAFE_UPPER) {
+                    // (1-x) = -x to machine precision:
+                    // log1p(4x / (x^2 + y^2))
+                    if (isPosInfinite(x) || isPosInfinite(y)) {
+                        re = 0;
+                    } else if (y >= SAFE_UPPER) {
+                        // Big x and y: divide by x*y
+                        re = Math.log1p((4 / y) / (x / y + y / x));
+                    } else if (y > 1) {
+                        // Big x: divide through by x:
+                        re = Math.log1p(4 / (x + y * y / x));
+                    } else {
+                        // Big x small y, as above but neglect y^2/x:
+                        re = Math.log1p(4 / x);
+                    }
+                } else if (y >= SAFE_UPPER) {
+                    if (x > 1) {
+                        // Big y, medium x, divide through by y:
+                        final double mxp1 = 1 - x;
+                        re = Math.log1p((4 * x / y) / (mxp1 * mxp1 / y + y));
+                    } else {
+                        // Big y, small x, as above but neglect (1-x)^2/y:
+                        // Note: log1p(v) == v - v^2/2 + v^3/3 ... Taylor series when v is small.
+                        // Here v is so small only the first term matters.
+                        re = 4 * x / y / y;
+                    }
+                } else if (x == 1) {
+                    // x = 1, small y:
+                    // Special case when x == 1 as (1-x) is invalid.
+                    // Simplify the following formula:
+                    // real = log( sqrt((x+1)^2+y^2) ) / 2 - log( sqrt((1-x)^2+y^2) ) / 2
+                    //      = log( sqrt(4+y^2) ) / 2 - log(y) / 2
+                    // if: 4+y^2 -> 4
+                    //      = log( 2 ) / 2 - log(y) / 2
+                    //      = (log(2) - log(y)) / 2
+                    // Multiply by 2 as it will be divided by 4 at the end.
+                    // C99: if y=0 raises the ‘‘divide-by-zero’’ floating-point exception.
+                    re = 2 * (LN_2 - Math.log(y));
+                } else {
+                    // Modified from boost which checks y > SAFE_LOWER.
+                    // if y*y -> 0 it will be ignored so always include it.
+                    final double mxp1 = 1 - x;
+                    re = Math.log1p((4 * x) / (mxp1 * mxp1 + y * y));
+                }
+                // Imaginary part:
+                // imag = atan2(2y, (1-x)(1+x) - y^2)
+                // if x or y are large, then the formula:
+                //   atan2(2y, (1-x)(1+x) - y^2)
+                // evaluates to +(PI - theta) where theta is negligible compared to PI.
+                if ((x >= SAFE_UPPER) || (y >= SAFE_UPPER)) {
+                    im = Math.PI;
+                } else if (x <= SAFE_LOWER) {
+                    // (1-x)^2 -> 1
+                    if (y <= SAFE_LOWER) {
+                        // 1 - y^2 -> 1
+                        im = Math.atan2(2 * y, 1);
+                    } else {
+                        im = Math.atan2(2 * y, 1 - y * y);
+                    }
+                } else {
+                    // Medium x, small y.
+                    // Modified from boost which checks (y == 0) && (x == 1) and sets re = 0.
+                    // This is same as the result from calling atan2(0, 0) so exclude this case.
+                    // 1 - y^2 = 1 so ignore subtracting y^2
+                    im = Math.atan2(2 * y, (1 - x) * (1 + x));
+                }
+            }
+        }
+        re /= 4;
+        im /= 2;
+        return result.apply(changeSign(re, real),
+            changeSign(im, imaginary));
+    }
 
 
 }

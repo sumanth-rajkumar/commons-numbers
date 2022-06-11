@@ -61,55 +61,55 @@ import java.util.function.DoubleUnaryOperator;
  * @see <a href="http://www.open-std.org/JTC1/SC22/WG14/www/standards">
  *    ISO/IEC 9899 - Programming languages - C</a>
  */
-public interface Complex extends Serializable {
+public final class Complex implements Serializable  {
     /**
      * A complex number representing \( i \), the square root of \( -1 \).
      *
      * <p>\( (0 + i 1) \).
      */
-    Complex I = Complex.ofCartesian(0, 1);
+    public static final Complex I = new Complex(0, 1);
 
     /** TODO. */
-    ComplexResult<Complex> CARTESIAN_RESULT = Complex::ofCartesian;
+    public static final ComplexResult<Complex> CARTESIAN_RESULT = (x, y) -> Complex.ofCartesian(x, y);
 
     /**
      * A complex number representing one.
      *
      * <p>\( (1 + i 0) \).
      */
-    Complex ONE = Complex.ofCartesian(1, 0);
+    public static final Complex ONE = new Complex(1, 0);
     /**
      * A complex number representing zero.
      *
      * <p>\( (0 + i 0) \).
      */
-    Complex ZERO = Complex.ofCartesian(0, 0);
+    public static final Complex ZERO = new Complex(0, 0);
 
     /** A complex number representing {@code NaN + i NaN}. */
-    Complex NAN = Complex.ofCartesian(Double.NaN, Double.NaN);
+    private static final Complex NAN = new Complex(Double.NaN, Double.NaN);
     /** &pi;/2. */
-    double PI_OVER_2 = 0.5 * Math.PI;
+    private static final double PI_OVER_2 = 0.5 * Math.PI;
     /** &pi;/4. */
-    double PI_OVER_4 = 0.25 * Math.PI;
+    private static final double PI_OVER_4 = 0.25 * Math.PI;
     /** Natural logarithm of 2 (ln(2)). */
-    double LN_2 = Math.log(2);
+    private static final double LN_2 = Math.log(2);
     /** Base 10 logarithm of 10 divided by 2 (log10(e)/2). */
-    double LOG_10E_O_2 = Math.log10(Math.E) / 2;
+    private static final double LOG_10E_O_2 = Math.log10(Math.E) / 2;
     /** Base 10 logarithm of 2 (log10(2)). */
-    double LOG10_2 = Math.log10(2);
+    private static final double LOG10_2 = Math.log10(2);
     /** {@code 1/2}. */
-    double HALF = 0.5;
+    private static final double HALF = 0.5;
     /** {@code sqrt(2)}. */
-    double ROOT2 = 1.4142135623730951;
+    private static final double ROOT2 = 1.4142135623730951;
     /** {@code 1.0 / sqrt(2)}.
      * This is pre-computed to the closest double from the exact result.
      * It is 1 ULP different from 1.0 / Math.sqrt(2) but equal to Math.sqrt(2) / 2.
      */
-    double ONE_OVER_ROOT2 = 0.7071067811865476;
+    private static final double ONE_OVER_ROOT2 = 0.7071067811865476;
     /** The bit representation of {@code -0.0}. */
-    long NEGATIVE_ZERO_LONG_BITS = Double.doubleToLongBits(-0.0);
+    private static final long NEGATIVE_ZERO_LONG_BITS = Double.doubleToLongBits(-0.0);
     /** Exponent offset in IEEE754 representation. */
-    int EXPONENT_OFFSET = 1023;
+    private static final int EXPONENT_OFFSET = 1023;
     /**
      * Largest double-precision floating-point number such that
      * {@code 1 + EPSILON} is numerically equal to 1. This value is an upper
@@ -121,15 +121,15 @@ public interface Complex extends Serializable {
      *
      * @see <a href="http://en.wikipedia.org/wiki/Machine_epsilon">Machine epsilon</a>
      */
-    double EPSILON = Double.longBitsToDouble((EXPONENT_OFFSET - 53L) << 52);
+    private static final double EPSILON = Double.longBitsToDouble((EXPONENT_OFFSET - 53L) << 52);
     /** Mask to remove the sign bit from a long. */
-    long UNSIGN_MASK = 0x7fff_ffff_ffff_ffffL;
+    private static final long UNSIGN_MASK = 0x7fff_ffff_ffff_ffffL;
     /** Mask to extract the 52-bit mantissa from a long representation of a double. */
-    long MANTISSA_MASK = 0x000f_ffff_ffff_ffffL;
+    private static final long MANTISSA_MASK = 0x000f_ffff_ffff_ffffL;
     /** The multiplier used to split the double value into hi and low parts. This must be odd
      * and a value of 2^s + 1 in the range {@code p/2 <= s <= p-1} where p is the number of
      * bits of precision of the floating point number. Here {@code s = 27}.*/
-    double MULTIPLIER = 1.34217729E8;
+    private static final double MULTIPLIER = 1.34217729E8;
 
     /**
      * Crossover point to switch computation for asin/acos factor A.
@@ -137,31 +137,31 @@ public interface Complex extends Serializable {
      * as used in boost::math::complex.
      * @see <a href="https://svn.boost.org/trac/boost/ticket/7290">Boost ticket 7290</a>
      */
-    double A_CROSSOVER = 10.0;
+    private static final double A_CROSSOVER = 10.0;
     /** Crossover point to switch computation for asin/acos factor B. */
-    double B_CROSSOVER = 0.6471;
+    private static final double B_CROSSOVER = 0.6471;
     /**
      * The safe maximum double value {@code x} to avoid loss of precision in asin/acos.
      * Equal to sqrt(M) / 8 in Hull, et al (1997) with M the largest normalised floating-point value.
      */
-    double SAFE_MAX = Math.sqrt(Double.MAX_VALUE) / 8;
+    private static final double SAFE_MAX = Math.sqrt(Double.MAX_VALUE) / 8;
     /**
      * The safe minimum double value {@code x} to avoid loss of precision/underflow in asin/acos.
      * Equal to sqrt(u) * 4 in Hull, et al (1997) with u the smallest normalised floating-point value.
      */
-    double SAFE_MIN = Math.sqrt(Double.MIN_NORMAL) * 4;
+    private static final double SAFE_MIN = Math.sqrt(Double.MIN_NORMAL) * 4;
     /**
      * The safe maximum double value {@code x} to avoid loss of precision in atanh.
      * Equal to sqrt(M) / 2 with M the largest normalised floating-point value.
      */
-    double SAFE_UPPER = Math.sqrt(Double.MAX_VALUE) / 2;
+    private static final double SAFE_UPPER = Math.sqrt(Double.MAX_VALUE) / 2;
     /**
      * The safe minimum double value {@code x} to avoid loss of precision/underflow in atanh.
      * Equal to sqrt(u) * 2 with u the smallest normalised floating-point value.
      */
-    double SAFE_LOWER = Math.sqrt(Double.MIN_NORMAL) * 2;
+    private static final double SAFE_LOWER = Math.sqrt(Double.MIN_NORMAL) * 2;
     /** The safe maximum double value {@code x} to avoid overflow in sqrt. */
-    double SQRT_SAFE_UPPER = Double.MAX_VALUE / 8;
+    private static final double SQRT_SAFE_UPPER = Double.MAX_VALUE / 8;
     /**
      * A safe maximum double value {@code m} where {@code e^m} is not infinite.
      * This can be used when functions require approximations of sinh(x) or cosh(x)
@@ -188,29 +188,29 @@ public interface Complex extends Serializable {
      * 0.5 * e^m * Double.MIN_VALUE * e^m * e^m = Infinity
      * 2.0 / e^m / e^m = 0.0 </pre>
      */
-    double SAFE_EXP = 708;
+    private static final double SAFE_EXP = 708;
     /**
      * The value of Math.exp(SAFE_EXP): e^708.
      * To be used in overflow/underflow safe products of e^m to approximate e^x where x > m.
      */
-    double EXP_M = Math.exp(SAFE_EXP);
+    private static final double EXP_M = Math.exp(SAFE_EXP);
 
     /** 54 shifted 20-bits to align with the exponent of the upper 32-bits of a double. */
-    int EXP_54 = 0x36_00000;
+    private static final int EXP_54 = 0x36_00000;
     /** Represents an exponent of 500 in unbiased form shifted 20-bits to align with the upper 32-bits of a double. */
-    int EXP_500 = 0x5f3_00000;
+    private static final int EXP_500 = 0x5f3_00000;
     /** Represents an exponent of 1024 in unbiased form (infinite or nan)
      * shifted 20-bits to align with the upper 32-bits of a double. */
-    int EXP_1024 = 0x7ff_00000;
+    private static final int EXP_1024 = 0x7ff_00000;
     /** Represents an exponent of -500 in unbiased form shifted 20-bits to align with the upper 32-bits of a double. */
-    int EXP_NEG_500 = 0x20b_00000;
+    private static final int EXP_NEG_500 = 0x20b_00000;
     /** 2^600. */
-    double TWO_POW_600 = 0x1.0p+600;
+    private static final double TWO_POW_600 = 0x1.0p+600;
     /** 2^-600. */
-    double TWO_POW_NEG_600 = 0x1.0p-600;
+    private static final double TWO_POW_NEG_600 = 0x1.0p-600;
 
     /** Serializable version identifier. */
-    long serialVersionUID = 20180201L;
+    private static final long serialVersionUID = 20180201L;
 
     /**
      * The size of the buffer for {@link #toString()}.
@@ -220,24 +220,29 @@ public interface Complex extends Serializable {
      * Set the buffer size to twice this and round up to a power of 2 thus
      * allowing for formatting characters. The size is 64.
      */
-    int TO_STRING_SIZE = 64;
+    private static final int TO_STRING_SIZE = 64;
     /** The minimum number of characters in the format. This is 5, e.g. {@code "(0,0)"}. */
-    int FORMAT_MIN_LEN = 5;
+    private static final int FORMAT_MIN_LEN = 5;
     /** {@link #toString() String representation}. */
-    char FORMAT_START = '(';
+    private static final char FORMAT_START = '(';
     /** {@link #toString() String representation}. */
-    char FORMAT_END = ')';
+    private static final char FORMAT_END = ')';
     /** {@link #toString() String representation}. */
-    char FORMAT_SEP = ',';
+    private static final char FORMAT_SEP = ',';
     /** The minimum number of characters before the separator. This is 2, e.g. {@code "(0"}. */
-    int BEFORE_SEP = 2;
+    private static final int BEFORE_SEP = 2;
+
+    /** The imaginary part. */
+    private final double imaginary;
+    /** The real part. */
+    private final double real;
 
     /**
      * Define a constructor for a Complex.
      * This is used in functions that implement trigonomic identities.
      */
     @FunctionalInterface
-    interface ComplexConstructor {
+    private interface ComplexConstructor {
         /**
          * Create a complex number given the real and imaginary parts.
          *
@@ -248,7 +253,16 @@ public interface Complex extends Serializable {
         Complex create(double real, double imaginary);
     }
 
-
+    /**
+     * Private default constructor.
+     *
+     * @param real Real part.
+     * @param imaginary Imaginary part.
+     */
+    private Complex(double real, double imaginary) {
+        this.real = real;
+        this.imaginary = imaginary;
+    }
 
     /**
      * Create a complex number given the real and imaginary parts.
@@ -257,8 +271,8 @@ public interface Complex extends Serializable {
      * @param imaginary Imaginary part.
      * @return {@code Complex} number.
      */
-    static Complex ofCartesian(double real, double imaginary) {
-        return new ComplexCartesianImpl(real, imaginary);
+    public static Complex ofCartesian(double real, double imaginary) {
+        return new Complex(real, imaginary);
     }
 
     /**
@@ -302,14 +316,14 @@ public interface Complex extends Serializable {
      * @return {@code Complex} number.
      * @see <a href="http://mathworld.wolfram.com/PolarCoordinates.html">Polar Coordinates</a>
      */
-    static Complex ofPolar(double rho, double theta) {
+    public static Complex ofPolar(double rho, double theta) {
         // Require finite theta and non-negative, non-nan rho
         if (!Double.isFinite(theta) || negative(rho) || Double.isNaN(rho)) {
             return NAN;
         }
         final double x = rho * Math.cos(theta);
         final double y = rho * Math.sin(theta);
-        return new ComplexCartesianImpl(x, y);
+        return new Complex(x, y);
     }
 
     /**
@@ -321,8 +335,8 @@ public interface Complex extends Serializable {
      * @return {@code Complex} cis number.
      * @see <a href="http://mathworld.wolfram.com/Cis.html">Cis</a>
      */
-    static Complex ofCis(double x) {
-        return Complex.ofCartesian(Math.cos(x), Math.sin(x));
+    public static Complex ofCis(double x) {
+        return new Complex(Math.cos(x), Math.sin(x));
     }
 
     /**
@@ -353,7 +367,7 @@ public interface Complex extends Serializable {
      * @see Double#parseDouble(String)
      * @see #toString()
      */
-    static Complex parse(String s) {
+    public static Complex parse(String s) {
         final int len = s.length();
         if (len < FORMAT_MIN_LEN) {
             throw new NumberFormatException(
@@ -420,9 +434,9 @@ public interface Complex extends Serializable {
      * @param s String representation.
      * @return A message.
      */
-    static String parsingExceptionMsg(String message,
-                                      Object error,
-                                      String s) {
+    private static String parsingExceptionMsg(String message,
+                                              Object error,
+                                              String s) {
         final StringBuilder sb = new StringBuilder(100)
             .append(message)
             .append(" '").append(error)
@@ -435,7 +449,9 @@ public interface Complex extends Serializable {
      *
      * @return The real part.
      */
-    double getReal();
+    public double getReal() {
+        return real;
+    }
 
     /**
      * Gets the real part \( a \) of this complex number \( (a + i b) \).
@@ -445,7 +461,7 @@ public interface Complex extends Serializable {
      * @return The real part.
      * @see #getReal()
      */
-    default double real() {
+    public double real() {
         return getReal();
     }
 
@@ -454,7 +470,9 @@ public interface Complex extends Serializable {
      *
      * @return The imaginary part.
      */
-    double getImaginary();
+    public double getImaginary() {
+        return imaginary;
+    }
 
     /**
      * Gets the imaginary part \( b \) of this complex number \( (a + i b) \).
@@ -464,7 +482,7 @@ public interface Complex extends Serializable {
      * @return The imaginary part.
      * @see #getImaginary()
      */
-    default double imag() {
+    public double imag() {
         return getImaginary();
     }
 
@@ -498,8 +516,8 @@ public interface Complex extends Serializable {
      * @see #isNaN()
      * @see <a href="http://mathworld.wolfram.com/ComplexModulus.html">Complex modulus</a>
      */
-    default double abs() {
-        return abs(real(), imag());
+    public double abs() {
+        return abs(real, imaginary);
     }
 
     /**
@@ -523,7 +541,7 @@ public interface Complex extends Serializable {
      * @param imaginary Imaginary part.
      * @return The absolute value.
      */
-    static double abs(double real, double imaginary) {
+    private static double abs(double real, double imaginary) {
         // Specialised implementation of hypot.
         // See NUMBERS-143
         return hypot(real, imaginary);
@@ -552,9 +570,9 @@ public interface Complex extends Serializable {
      * @return The argument of this complex number.
      * @see Math#atan2(double, double)
      */
-    default double arg() {
+    public double arg() {
         // Delegate
-        return Math.atan2(imag(), real());
+        return Math.atan2(imaginary, real);
     }
 
     /**
@@ -579,12 +597,10 @@ public interface Complex extends Serializable {
      * @see #abs()
      * @see <a href="http://mathworld.wolfram.com/AbsoluteSquare.html">Absolute square</a>
      */
-    default double norm() {
+    public double norm() {
         if (isInfinite()) {
             return Double.POSITIVE_INFINITY;
         }
-        double real = real();
-        double imaginary = imag();
         return real * real + imaginary * imaginary;
     }
 
@@ -604,8 +620,8 @@ public interface Complex extends Serializable {
      * @see #isInfinite()
      * @see #equals(Object) Complex.equals(Object)
      */
-    default boolean isNaN() {
-        if (Double.isNaN(real()) || Double.isNaN(imag())) {
+    public boolean isNaN() {
+        if (Double.isNaN(real) || Double.isNaN(imaginary)) {
             return !isInfinite();
         }
         return false;
@@ -620,8 +636,8 @@ public interface Complex extends Serializable {
      * @return {@code true} if this instance contains an infinite value.
      * @see Double#isInfinite(double)
      */
-    default boolean isInfinite() {
-        return Double.isInfinite(real()) || Double.isInfinite(imag());
+    public boolean isInfinite() {
+        return Double.isInfinite(real) || Double.isInfinite(imaginary);
     }
 
     /**
@@ -630,8 +646,8 @@ public interface Complex extends Serializable {
      * @return {@code true} if this instance contains finite values.
      * @see Double#isFinite(double)
      */
-    default boolean isFinite() {
-        return Double.isFinite(real()) && Double.isFinite(imag());
+    public boolean isFinite() {
+        return Double.isFinite(real) && Double.isFinite(imaginary);
     }
 
     /**
@@ -645,8 +661,8 @@ public interface Complex extends Serializable {
      *
      * @return The conjugate (\( \overline{z} \)) of this complex number.
      */
-    default Complex conj() {
-        return Complex.ofCartesian(real(), -imag());
+    public Complex conj() {
+        return new Complex(real, -imaginary);
     }
 
     /**
@@ -659,8 +675,8 @@ public interface Complex extends Serializable {
      *
      * @return \( -z \).
      */
-    default Complex negate() {
-        return Complex.ofCartesian(-real(), -imag());
+    public Complex negate() {
+        return new Complex(-real, -imaginary);
     }
 
     /**
@@ -678,9 +694,9 @@ public interface Complex extends Serializable {
      * @see <a href="http://pubs.opengroup.org/onlinepubs/9699919799/functions/cproj.html">
      * IEEE and ISO C standards: cproj</a>
      */
-    default Complex proj() {
+    public Complex proj() {
         if (isInfinite()) {
-            return Complex.ofCartesian(Double.POSITIVE_INFINITY, Math.copySign(0.0, imag()));
+            return new Complex(Double.POSITIVE_INFINITY, Math.copySign(0.0, imaginary));
         }
         return this;
     }
@@ -695,9 +711,9 @@ public interface Complex extends Serializable {
      * @return {@code this + addend}.
      * @see <a href="http://mathworld.wolfram.com/ComplexAddition.html">Complex Addition</a>
      */
-    default Complex add(Complex addend) {
-        return Complex.ofCartesian(real() + addend.real(),
-                           imag() + addend.imag());
+    public Complex add(Complex addend) {
+        return new Complex(real + addend.real,
+                           imaginary + addend.imaginary);
     }
 
     /**
@@ -720,8 +736,8 @@ public interface Complex extends Serializable {
      * @see #add(Complex)
      * @see #ofCartesian(double, double)
      */
-    default Complex add(double addend) {
-        return Complex.ofCartesian(real() + addend, imag());
+    public Complex add(double addend) {
+        return new Complex(real + addend, imaginary);
     }
 
     /**
@@ -744,8 +760,8 @@ public interface Complex extends Serializable {
      * @see #add(Complex)
      * @see #ofCartesian(double, double)
      */
-    default Complex addImaginary(double addend) {
-        return Complex.ofCartesian(real(), imag() + addend);
+    public Complex addImaginary(double addend) {
+        return new Complex(real, imaginary + addend);
     }
 
     /**
@@ -758,9 +774,9 @@ public interface Complex extends Serializable {
      * @return {@code this - subtrahend}.
      * @see <a href="http://mathworld.wolfram.com/ComplexSubtraction.html">Complex Subtraction</a>
      */
-    default Complex subtract(Complex subtrahend) {
-        return Complex.ofCartesian(real() - subtrahend.real(),
-                           imag() - subtrahend.imag());
+    public Complex subtract(Complex subtrahend) {
+        return new Complex(real - subtrahend.real,
+                           imaginary - subtrahend.imaginary);
     }
 
     /**
@@ -777,8 +793,8 @@ public interface Complex extends Serializable {
      * @return {@code this - subtrahend}.
      * @see #subtract(Complex)
      */
-    default Complex subtract(double subtrahend) {
-        return Complex.ofCartesian(real() - subtrahend, imag());
+    public Complex subtract(double subtrahend) {
+        return new Complex(real - subtrahend, imaginary);
     }
 
     /**
@@ -795,8 +811,8 @@ public interface Complex extends Serializable {
      * @return {@code this - subtrahend}.
      * @see #subtract(Complex)
      */
-    default Complex subtractImaginary(double subtrahend) {
-        return Complex.ofCartesian(real(), imag() - subtrahend);
+    public Complex subtractImaginary(double subtrahend) {
+        return new Complex(real, imaginary - subtrahend);
     }
 
     /**
@@ -818,8 +834,8 @@ public interface Complex extends Serializable {
      * @see #subtract(Complex)
      * @see #ofCartesian(double, double)
      */
-    default Complex subtractFrom(double minuend) {
-        return Complex.ofCartesian(minuend - real(), -imag());
+    public Complex subtractFrom(double minuend) {
+        return new Complex(minuend - real, -imaginary);
     }
 
     /**
@@ -841,8 +857,8 @@ public interface Complex extends Serializable {
      * @see #subtract(Complex)
      * @see #ofCartesian(double, double)
      */
-    default Complex subtractFromImaginary(double minuend) {
-        return Complex.ofCartesian(-real(), minuend - imag());
+    public Complex subtractFromImaginary(double minuend) {
+        return new Complex(-real, minuend - imaginary);
     }
 
     /**
@@ -857,16 +873,16 @@ public interface Complex extends Serializable {
      * @return {@code this * factor}.
      * @see <a href="http://mathworld.wolfram.com/ComplexMultiplication.html">Complex Muliplication</a>
      */
-    default Complex multiply(Complex factor) {
+    public Complex multiply(Complex factor) {
         return applyBinaryOperator(factor, ComplexFunctions::multiply);
-        //return multiply(real(), imag(), factor.real(), factor.imaginary);
+        //return multiply(real, imaginary, factor.real, factor.imaginary);
     }
 
 
 
 
-    default Complex multiply(double factor) {
-        return Complex.ofCartesian(real() * factor, imag() * factor);
+    public Complex multiply(double factor) {
+        return new Complex(real * factor, imaginary * factor);
     }
 
     /**
@@ -898,8 +914,8 @@ public interface Complex extends Serializable {
      * @return {@code this * factor}.
      * @see #multiply(Complex)
      */
-    default Complex multiplyImaginary(double factor) {
-        return Complex.ofCartesian(-imag() * factor, real() * factor);
+    public Complex multiplyImaginary(double factor) {
+        return new Complex(-imaginary * factor, real * factor);
     }
 
     /**
@@ -914,7 +930,7 @@ public interface Complex extends Serializable {
      * @return {@code this / divisor}.
      * @see <a href="http://mathworld.wolfram.com/ComplexDivision.html">Complex Division</a>
      */
-    default Complex divide(Complex divisor) {
+    public Complex divide(Complex divisor) {
         return applyBinaryOperator(divisor, ComplexFunctions::divide);
     }
 
@@ -941,8 +957,8 @@ public interface Complex extends Serializable {
      * @return {@code this / divisor}.
      * @see #divide(Complex)
      */
-    default Complex divide(double divisor) {
-        return Complex.ofCartesian(real() / divisor, imag() / divisor);
+    public Complex divide(double divisor) {
+        return new Complex(real / divisor, imaginary / divisor);
     }
 
     /**
@@ -975,8 +991,8 @@ public interface Complex extends Serializable {
      * @see #divide(Complex)
      * @see #divide(double)
      */
-    default Complex divideImaginary(double divisor) {
-        return Complex.ofCartesian(imag() / divisor, -real() / divisor);
+    public Complex divideImaginary(double divisor) {
+        return new Complex(imaginary / divisor, -real / divisor);
     }
 
     /**
@@ -1013,16 +1029,16 @@ public interface Complex extends Serializable {
      * @return The exponential of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Exp/">Exp</a>
      */
-    default Complex exp() {
+    public Complex exp() {
         return applyUnaryOperator(ComplexFunctions::exp);
     }
 
-    default Complex applyUnaryOperator(ComplexFunction operator) {
-        return operator.apply(this.real(), this.imag(), CARTESIAN_RESULT);
+    public Complex applyUnaryOperator(ComplexFunction operator) {
+        return operator.apply(this.real, this.imaginary, CARTESIAN_RESULT);
     }
 
-    default Complex applyBinaryOperator(Complex input, ComplexBiFunction operator) {
-        return operator.apply(this.real(), this.imag(), input.getReal(), input.getImaginary(), CARTESIAN_RESULT);
+    public Complex applyBinaryOperator(Complex input, ComplexBiFunction operator) {
+        return operator.apply(this.real, this.imaginary, input.getReal(), input.getImaginary(), CARTESIAN_RESULT);
     }
 
 
@@ -1071,7 +1087,7 @@ public interface Complex extends Serializable {
      * @see #arg()
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Log/">Log</a>
      */
-    default Complex log() {
+    public Complex log() {
         return log(Math::log, HALF, LN_2, Complex::ofCartesian);
     }
 
@@ -1096,7 +1112,7 @@ public interface Complex extends Serializable {
      * @see #abs()
      * @see #arg()
      */
-    default Complex log10() {
+    public Complex log10() {
         return log(Math::log10, LOG_10E_O_2, LOG10_2, Complex::ofCartesian);
     }
 
@@ -1119,9 +1135,9 @@ public interface Complex extends Serializable {
      * @see #abs()
      * @see #arg()
      */
-    default Complex log(DoubleUnaryOperator log, double logOfeOver2, double logOf2, ComplexConstructor constructor) {
+    private Complex log(DoubleUnaryOperator log, double logOfeOver2, double logOf2, ComplexConstructor constructor) {
         // Handle NaN
-        if (Double.isNaN(real()) || Double.isNaN(imag())) {
+        if (Double.isNaN(real) || Double.isNaN(imaginary)) {
             // Return NaN unless infinite
             if (isInfinite()) {
                 return constructor.create(Double.POSITIVE_INFINITY, Double.NaN);
@@ -1135,8 +1151,8 @@ public interface Complex extends Serializable {
         // log(x^2 + y^2) / 2
 
         // Compute with positive values
-        double x = Math.abs(real());
-        double y = Math.abs(imag());
+        double x = Math.abs(real);
+        double y = Math.abs(imaginary);
 
         // Find the larger magnitude.
         if (x < y) {
@@ -1148,7 +1164,7 @@ public interface Complex extends Serializable {
         if (x == 0) {
             // Handle zero: raises the ‘‘divide-by-zero’’ floating-point exception.
             return constructor.create(Double.NEGATIVE_INFINITY,
-                                      negative(real()) ? Math.copySign(Math.PI, imag()) : imag());
+                                      negative(real) ? Math.copySign(Math.PI, imaginary) : imaginary);
         }
 
         double re;
@@ -1218,14 +1234,12 @@ public interface Complex extends Serializable {
      * @see <a href="http://mathworld.wolfram.com/ComplexExponentiation.html">Complex exponentiation</a>
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Power/">Power</a>
      */
-    default Complex pow(Complex x) {
-        double real = real();
-        double imaginary = imag();
+    public Complex pow(Complex x) {
         if (real == 0 &&
             imaginary == 0) {
             // This value is zero. Test the other.
-            if (x.real() > 0 &&
-                x.imag() == 0) {
+            if (x.real > 0 &&
+                x.imaginary == 0) {
                 // 0 raised to positive number is 0
                 return ZERO;
             }
@@ -1253,9 +1267,9 @@ public interface Complex extends Serializable {
      * @see #pow(Complex)
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Power/">Power</a>
      */
-    default Complex pow(double x) {
-        if (real() == 0 &&
-            imag() == 0) {
+    public Complex pow(double x) {
+        if (real == 0 &&
+            imaginary == 0) {
             // This value is zero. Test the other.
             if (x > 0) {
                 // 0 raised to positive number is 0
@@ -1314,8 +1328,8 @@ public interface Complex extends Serializable {
      * @return The square root of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Sqrt/">Sqrt</a>
      */
-    default Complex sqrt() {
-        return sqrt(real(), imag());
+    public Complex sqrt() {
+        return sqrt(real, imaginary);
     }
 
     /**
@@ -1327,7 +1341,7 @@ public interface Complex extends Serializable {
      * @param max the maximum (exclusive).
      * @return true if inside the region.
      */
-    static boolean inRegion(double x, double y, double min, double max) {
+    private static boolean inRegion(double x, double y, double min, double max) {
         return (x < max) && (x > min) && (y < max) && (y > min);
     }
 
@@ -1338,18 +1352,18 @@ public interface Complex extends Serializable {
      * @param imaginary Imaginary component.
      * @return The square root of the complex number.
      */
-    static Complex sqrt(double real, double imaginary) {
+    private static Complex sqrt(double real, double imaginary) {
         // Handle NaN
         if (Double.isNaN(real) || Double.isNaN(imaginary)) {
             // Check for infinite
             if (Double.isInfinite(imaginary)) {
-                return Complex.ofCartesian(Double.POSITIVE_INFINITY, imaginary);
+                return new Complex(Double.POSITIVE_INFINITY, imaginary);
             }
             if (Double.isInfinite(real)) {
                 if (real == Double.NEGATIVE_INFINITY) {
-                    return Complex.ofCartesian(Double.NaN, Math.copySign(Double.POSITIVE_INFINITY, imaginary));
+                    return new Complex(Double.NaN, Math.copySign(Double.POSITIVE_INFINITY, imaginary));
                 }
-                return Complex.ofCartesian(Double.POSITIVE_INFINITY, Double.NaN);
+                return new Complex(Double.POSITIVE_INFINITY, Double.NaN);
             }
             return NAN;
         }
@@ -1376,19 +1390,19 @@ public interface Complex extends Serializable {
 
             // Check for infinite
             if (isPosInfinite(y)) {
-                return Complex.ofCartesian(Double.POSITIVE_INFINITY, imaginary);
+                return new Complex(Double.POSITIVE_INFINITY, imaginary);
             } else if (isPosInfinite(x)) {
                 if (real == Double.NEGATIVE_INFINITY) {
-                    return Complex.ofCartesian(0, Math.copySign(Double.POSITIVE_INFINITY, imaginary));
+                    return new Complex(0, Math.copySign(Double.POSITIVE_INFINITY, imaginary));
                 }
-                return Complex.ofCartesian(Double.POSITIVE_INFINITY, Math.copySign(0, imaginary));
+                return new Complex(Double.POSITIVE_INFINITY, Math.copySign(0, imaginary));
             } else if (y == 0) {
                 // Real only
                 final double sqrtAbs = Math.sqrt(x);
                 if (real < 0) {
-                    return Complex.ofCartesian(0, Math.copySign(sqrtAbs, imaginary));
+                    return new Complex(0, Math.copySign(sqrtAbs, imaginary));
                 }
-                return Complex.ofCartesian(sqrtAbs, imaginary);
+                return new Complex(sqrtAbs, imaginary);
             } else if (x == 0) {
                 // Imaginary only. This sets the two components to the same magnitude.
                 // Note: In polar coordinates this does not happen:
@@ -1397,7 +1411,7 @@ public interface Complex extends Serializable {
                 // arg() / 2 = pi/4 and cos and sin should both return sqrt(2)/2 but
                 // are different by 1 ULP.
                 final double sqrtAbs = Math.sqrt(y) * ONE_OVER_ROOT2;
-                return Complex.ofCartesian(sqrtAbs, Math.copySign(sqrtAbs, imaginary));
+                return new Complex(sqrtAbs, Math.copySign(sqrtAbs, imaginary));
             } else {
                 // Over/underflow.
                 // Full scaling is not required as this is done in the hypotenuse function.
@@ -1426,9 +1440,9 @@ public interface Complex extends Serializable {
         }
 
         if (real >= 0) {
-            return Complex.ofCartesian(t / 2, imaginary / t);
+            return new Complex(t / 2, imaginary / t);
         }
-        return Complex.ofCartesian(y / t, Math.copySign(t / 2, imaginary));
+        return new Complex(y / t, Math.copySign(t / 2, imaginary));
     }
 
     /**
@@ -1452,11 +1466,11 @@ public interface Complex extends Serializable {
      * @return The sine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Sin/">Sin</a>
      */
-    default Complex sin() {
+    public Complex sin() {
         // Define in terms of sinh
         // sin(z) = -i sinh(iz)
         // Multiply this number by I, compute sinh, then multiply by back
-        return sinh(-imag(), real(), Complex::multiplyNegativeI);
+        return sinh(-imaginary, real, Complex::multiplyNegativeI);
     }
 
     /**
@@ -1480,11 +1494,11 @@ public interface Complex extends Serializable {
      * @return The cosine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Cos/">Cos</a>
      */
-    default Complex cos() {
+    public Complex cos() {
         // Define in terms of cosh
         // cos(z) = cosh(iz)
         // Multiply this number by I and compute cosh.
-        return cosh(-imag(), real(), Complex::ofCartesian);
+        return cosh(-imaginary, real, Complex::ofCartesian);
     }
 
     /**
@@ -1506,11 +1520,11 @@ public interface Complex extends Serializable {
      * @return The tangent of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Tan/">Tangent</a>
      */
-    default Complex tan() {
+    public Complex tan() {
         // Define in terms of tanh
         // tan(z) = -i tanh(iz)
         // Multiply this number by I, compute tanh, then multiply by back
-        return tanh(-imag(), real(), Complex::multiplyNegativeI);
+        return tanh(-imaginary, real, Complex::multiplyNegativeI);
     }
 
     /**
@@ -1551,12 +1565,12 @@ public interface Complex extends Serializable {
      * @return The inverse sine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcSin/">ArcSin</a>
      */
-    default Complex asin() {
-        return asin(real(), imag(), Complex::ofCartesian);
+    public Complex asin() {
+        return asin(real, imaginary, Complex::ofCartesian);
     }
 
 
-    static Complex asin(final double real, final double imaginary,
+    private static Complex asin(final double real, final double imaginary,
                                 final ComplexConstructor constructor) {
         // Compute with positive values and determine sign at the end
         final double x = Math.abs(real);
@@ -1727,8 +1741,8 @@ public interface Complex extends Serializable {
      * @return The inverse cosine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcCos/">ArcCos</a>
      */
-    default Complex acos() {
-        return acos(real(), imag(), Complex::ofCartesian);
+    public Complex acos() {
+        return acos(real, imaginary, Complex::ofCartesian);
     }
 
     /**
@@ -1751,7 +1765,7 @@ public interface Complex extends Serializable {
      * @param constructor Constructor.
      * @return The inverse cosine of the complex number.
      */
-    static Complex acos(final double real, final double imaginary,
+    private static Complex acos(final double real, final double imaginary,
                                 final ComplexConstructor constructor) {
         // Compute with positive values and determine sign at the end
         final double x = Math.abs(real);
@@ -1887,11 +1901,11 @@ public interface Complex extends Serializable {
      * @return The inverse tangent of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcTan/">ArcTan</a>
      */
-    default Complex atan() {
+    public Complex atan() {
         // Define in terms of atanh
         // atan(z) = -i atanh(iz)
         // Multiply this number by I, compute atanh, then multiply by back
-        return atanh(-imag(), real(), Complex::multiplyNegativeI);
+        return atanh(-imaginary, real, Complex::multiplyNegativeI);
     }
 
     /**
@@ -1929,8 +1943,8 @@ public interface Complex extends Serializable {
      * @return The hyperbolic sine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Sinh/">Sinh</a>
      */
-    default Complex sinh() {
-        return sinh(real(), imag(), Complex::ofCartesian);
+    public Complex sinh() {
+        return sinh(real, imaginary, Complex::ofCartesian);
     }
 
     /**
@@ -1944,7 +1958,7 @@ public interface Complex extends Serializable {
      * @param constructor Constructor.
      * @return The hyperbolic sine of the complex number.
      */
-    static Complex sinh(double real, double imaginary, ComplexConstructor constructor) {
+    private static Complex sinh(double real, double imaginary, ComplexConstructor constructor) {
         if (Double.isInfinite(real) && !Double.isFinite(imaginary)) {
             return constructor.create(real, Double.NaN);
         }
@@ -2010,8 +2024,8 @@ public interface Complex extends Serializable {
      * @return The hyperbolic cosine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Cosh/">Cosh</a>
      */
-    default Complex cosh() {
-        return cosh(real(), imag(), Complex::ofCartesian);
+    public Complex cosh() {
+        return cosh(real, imaginary, Complex::ofCartesian);
     }
 
     /**
@@ -2025,7 +2039,7 @@ public interface Complex extends Serializable {
      * @param constructor Constructor.
      * @return The hyperbolic cosine of the complex number.
      */
-    static Complex cosh(double real, double imaginary, ComplexConstructor constructor) {
+    private static Complex cosh(double real, double imaginary, ComplexConstructor constructor) {
         // ISO C99: Preserve the even function by mapping to positive
         // f(z) = f(-z)
         if (Double.isInfinite(real) && !Double.isFinite(imaginary)) {
@@ -2080,7 +2094,7 @@ public interface Complex extends Serializable {
      * @param constructor Constructor.
      * @return The hyperbolic sine/cosine of the complex number.
      */
-    static Complex coshsinh(double x, double real, double imaginary, boolean sinh,
+    private static Complex coshsinh(double x, double real, double imaginary, boolean sinh,
                                     ComplexConstructor constructor) {
         // Always require the cos and sin.
         double re = Math.cos(imaginary);
@@ -2166,8 +2180,8 @@ public interface Complex extends Serializable {
      * @return The hyperbolic tangent of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Tanh/">Tanh</a>
      */
-    default Complex tanh() {
-        return tanh(real(), imag(), Complex::ofCartesian);
+    public Complex tanh() {
+        return tanh(real, imaginary, Complex::ofCartesian);
     }
 
     /**
@@ -2181,7 +2195,7 @@ public interface Complex extends Serializable {
      * @param constructor Constructor.
      * @return The hyperbolic tangent of the complex number.
      */
-    static Complex tanh(double real, double imaginary, ComplexConstructor constructor) {
+    private static Complex tanh(double real, double imaginary, ComplexConstructor constructor) {
         // Cache the absolute real value
         final double x = Math.abs(real);
 
@@ -2312,13 +2326,13 @@ public interface Complex extends Serializable {
      * @return The inverse hyperbolic sine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcSinh/">ArcSinh</a>
      */
-    default Complex asinh() {
+    public Complex asinh() {
         // Define in terms of asin
         // asinh(z) = -i asin(iz)
         // Note: This is the opposite to the identity defined in the C99 standard:
         // asin(z) = -i asinh(iz)
         // Multiply this number by I, compute asin, then multiply by back
-        return asin(-imag(), real(), Complex::multiplyNegativeI);
+        return asin(-imaginary, real, Complex::multiplyNegativeI);
     }
 
     /**
@@ -2365,7 +2379,7 @@ public interface Complex extends Serializable {
      * @return The inverse hyperbolic cosine of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcCosh/">ArcCosh</a>
      */
-    default Complex acosh() {
+    public Complex acosh() {
         // Define in terms of acos
         // acosh(z) = +-i acos(z)
         // Note the special case:
@@ -2373,19 +2387,16 @@ public interface Complex extends Serializable {
         // acosh(0 + iNaN) = NaN + iπ/2
         // will not appropriately multiply by I to maintain positive imaginary if
         // acos() imaginary computes as NaN. So do this explicitly.
-        double real = real();
-        double imaginary = imag();
-
         if (Double.isNaN(imaginary) && real == 0) {
-            return Complex.ofCartesian(Double.NaN, PI_OVER_2);
+            return new Complex(Double.NaN, PI_OVER_2);
         }
         return acos(real, imaginary, (re, im) ->
             // Set the sign appropriately for real >= 0
             (negative(im)) ?
                 // Multiply by I
-                Complex.ofCartesian(-im, re) :
+                new Complex(-im, re) :
                 // Multiply by -I
-                Complex.ofCartesian(im, -re)
+                new Complex(im, -re)
         );
     }
 
@@ -2433,8 +2444,8 @@ public interface Complex extends Serializable {
      * @return The inverse hyperbolic tangent of this complex number.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcTanh/">ArcTanh</a>
      */
-    default Complex atanh() {
-        return atanh(real(), imag(), Complex::ofCartesian);
+    public Complex atanh() {
+        return atanh(real, imaginary, Complex::ofCartesian);
     }
 
     /**
@@ -2457,7 +2468,7 @@ public interface Complex extends Serializable {
      * @param constructor Constructor.
      * @return The inverse hyperbolic tangent of the complex number.
      */
-    static Complex atanh(final double real, final double imaginary,
+    private static Complex atanh(final double real, final double imaginary,
                                  final ComplexConstructor constructor) {
         // Compute with positive values and determine sign at the end
         double x = Math.abs(real);
@@ -2632,7 +2643,7 @@ public interface Complex extends Serializable {
      * @param y the y value
      * @return {@code x^2 + y^2 - 1}.
      */
-    static double x2y2m1(double x, double y) {
+    private static double x2y2m1(double x, double y) {
         // Hull et al used (x-1)*(x+1)+y*y.
         // From the paper on page 236:
 
@@ -2704,7 +2715,7 @@ public interface Complex extends Serializable {
      * @see <a href="https://doi.org/10.1007/BF01397083">
      * Dekker (1971) A floating-point technique for extending the available precision</a>
      */
-    static double splitHigh(double a) {
+    private static double splitHigh(double a) {
         final double c = MULTIPLIER * a;
         return c - (c - a);
     }
@@ -2725,7 +2736,7 @@ public interface Complex extends Serializable {
      * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
      * Shewchuk (1997) Theorum 18</a>
      */
-    static double squareLow(double low, double high, double square) {
+    private static double squareLow(double low, double high, double square) {
         final double lh = low * high;
         return low * low - (((square - high * high) - lh) - lh);
     }
@@ -2742,7 +2753,7 @@ public interface Complex extends Serializable {
      * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
      * Shewchuk (1997) Theorum 6</a>
      */
-    static double fastSumLow(double a, double b, double x) {
+    private static double fastSumLow(double a, double b, double x) {
         // x = a + b
         // bVirtual = x - a
         // y = b - bVirtual
@@ -2760,7 +2771,7 @@ public interface Complex extends Serializable {
      * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
      * Shewchuk (1997) Theorum 7</a>
      */
-    static double sumLow(double a, double b, double x) {
+    private static double sumLow(double a, double b, double x) {
         // x = a + b
         // bVirtual = x - a
         // aVirtual = x - bVirtual
@@ -2784,7 +2795,7 @@ public interface Complex extends Serializable {
      * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
      * Shewchuk (1997) Theorum 12</a>
      */
-    static double sumx2y2m1(double x2High, double x2Low, double y2High, double y2Low) {
+    private static double sumx2y2m1(double x2High, double x2Low, double y2High, double y2Low) {
         // Let e and f be non-overlapping expansions of components of length m and n.
         // The following algorithm will produce a non-overlapping expansion h where the
         // sum h_i = e + f and components of h are in increasing order of magnitude.
@@ -2871,7 +2882,7 @@ public interface Complex extends Serializable {
      * @throws IllegalArgumentException if {@code n} is zero.
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Root/">Root</a>
      */
-    default List<Complex> nthRoot(int n) {
+    public List<Complex> nthRoot(int n) {
         if (n == 0) {
             throw new IllegalArgumentException("cannot compute zeroth root");
         }
@@ -2896,6 +2907,109 @@ public interface Complex extends Serializable {
         return result;
     }
 
+    /**
+     * Test for equality with another object. If the other object is a {@code Complex} then a
+     * comparison is made of the real and imaginary parts; otherwise {@code false} is returned.
+     *
+     * <p>If both the real and imaginary parts of two complex numbers
+     * are exactly the same the two {@code Complex} objects are considered to be equal.
+     * For this purpose, two {@code double} values are considered to be
+     * the same if and only if the method {@link Double #doubleToLongBits(double)}
+     * returns the identical {@code long} value when applied to each.
+     *
+     * <p>Note that in most cases, for two instances of class
+     * {@code Complex}, {@code c1} and {@code c2}, the
+     * value of {@code c1.equals(c2)} is {@code true} if and only if
+     *
+     * <pre>
+     *  {@code c1.getReal() == c2.getReal() && c1.getImaginary() == c2.getImaginary()}</pre>
+     *
+     * <p>also has the value {@code true}. However, there are exceptions:
+     *
+     * <ul>
+     *  <li>
+     *   Instances that contain {@code NaN} values in the same part
+     *   are considered to be equal for that part, even though {@code Double.NaN == Double.NaN}
+     *   has the value {@code false}.
+     *  </li>
+     *  <li>
+     *   Instances that share a {@code NaN} value in one part
+     *   but have different values in the other part are <em>not</em> considered equal.
+     *  </li>
+     *  <li>
+     *   Instances that contain different representations of zero in the same part
+     *   are <em>not</em> considered to be equal for that part, even though {@code -0.0 == 0.0}
+     *   has the value {@code true}.
+     *  </li>
+     * </ul>
+     *
+     * <p>The behavior is the same as if the components of the two complex numbers were passed
+     * to {@link java.util.Arrays#equals(double[], double[]) Arrays.equals(double[], double[])}:
+     *
+     * <pre>
+     *  Arrays.equals(new double[]{c1.getReal(), c1.getImaginary()},
+     *                new double[]{c2.getReal(), c2.getImaginary()}); </pre>
+     *
+     * @param other Object to test for equality with this instance.
+     * @return {@code true} if the objects are equal, {@code false} if object
+     * is {@code null}, not an instance of {@code Complex}, or not equal to
+     * this instance.
+     * @see java.lang.Double#doubleToLongBits(double)
+     * @see java.util.Arrays#equals(double[], double[])
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other instanceof Complex) {
+            final Complex c = (Complex) other;
+            return equals(real, c.real) &&
+                equals(imaginary, c.imaginary);
+        }
+        return false;
+    }
+
+    /**
+     * Gets a hash code for the complex number.
+     *
+     * <p>The behavior is the same as if the components of the complex number were passed
+     * to {@link java.util.Arrays#hashCode(double[]) Arrays.hashCode(double[])}:
+     *
+     * <pre>
+     *  {@code Arrays.hashCode(new double[] {getReal(), getImaginary()})}</pre>
+     *
+     * @return A hash code value for this object.
+     * @see java.util.Arrays#hashCode(double[]) Arrays.hashCode(double[])
+     */
+    @Override
+    public int hashCode() {
+        return 31 * (31 + Double.hashCode(real)) + Double.hashCode(imaginary);
+    }
+
+    /**
+     * Returns a string representation of the complex number.
+     *
+     * <p>The string will represent the numeric values of the real and imaginary parts.
+     * The values are split by a separator and surrounded by parentheses.
+     * The string can be {@link #parse(String) parsed} to obtain an instance with the same value.
+     *
+     * <p>The format for complex number \( x + i y \) is {@code "(x,y)"}, with \( x \) and
+     * \( y \) converted as if using {@link Double#toString(double)}.
+     *
+     * @return A string representation of the complex number.
+     * @see #parse(String)
+     * @see Double#toString(double)
+     */
+    @Override
+    public String toString() {
+        return new StringBuilder(TO_STRING_SIZE)
+            .append(FORMAT_START)
+            .append(real).append(FORMAT_SEP)
+            .append(imaginary)
+            .append(FORMAT_END)
+            .toString();
+    }
 
     /**
      * Returns {@code true} if the values are equal according to semantics of
@@ -2905,7 +3019,7 @@ public interface Complex extends Serializable {
      * @param y Value
      * @return {@code Double.valueof(x).equals(Double.valueOf(y))}.
      */
-    static boolean equals(double x, double y) {
+    private static boolean equals(double x, double y) {
         return Double.doubleToLongBits(x) == Double.doubleToLongBits(y);
     }
 
@@ -2933,7 +3047,7 @@ public interface Complex extends Serializable {
      * @param d Value.
      * @return {@code true} if {@code d} is +inf.
      */
-    static boolean isPosInfinite(double d) {
+    private static boolean isPosInfinite(double d) {
         return d == Double.POSITIVE_INFINITY;
     }
 
@@ -2945,7 +3059,7 @@ public interface Complex extends Serializable {
      * @param d Value.
      * @return {@code true} if {@code d} is +finite.
      */
-    static boolean isPosFinite(double d) {
+    private static boolean isPosFinite(double d) {
         return d <= Double.MAX_VALUE;
     }
 
@@ -2955,14 +3069,14 @@ public interface Complex extends Serializable {
      * equivalent of:
      *
      * <pre>
-     *  z = new Complex(real(), imaginary).multiplyImaginary(-1);</pre>
+     *  z = new Complex(real, imaginary).multiplyImaginary(-1);</pre>
      *
      * @param real Real part.
      * @param imaginary Imaginary part.
      * @return {@code Complex} object.
      */
-    static Complex multiplyNegativeI(double real, double imaginary) {
-        return Complex.ofCartesian(imaginary, -real);
+    private static Complex multiplyNegativeI(double real, double imaginary) {
+        return new Complex(imaginary, -real);
     }
 
     /**
@@ -2982,7 +3096,7 @@ public interface Complex extends Serializable {
      * @return magnitude or -magnitude.
      * @see #negative(double)
      */
-    static double changeSign(double magnitude, double signedValue) {
+    private static double changeSign(double magnitude, double signedValue) {
         return negative(signedValue) ? -magnitude : magnitude;
     }
 
@@ -3177,7 +3291,7 @@ public interface Complex extends Serializable {
      * @see <a href="https://doi.org/10.1007/BF01397083">
      * Dekker (1971) A floating-point technique for extending the available precision</a>
      */
-    static double x2y2(double x, double y) {
+    private static double x2y2(double x, double y) {
         // Note:
         // This method is different from the high-accuracy summation used in fdlibm for hypot.
         // The summation could be any valid computation of x^2+y^2. However since this follows

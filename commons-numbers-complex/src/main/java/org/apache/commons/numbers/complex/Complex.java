@@ -19,7 +19,9 @@ package org.apache.commons.numbers.complex;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.DoubleUnaryOperator;
 
 /**
@@ -61,7 +63,7 @@ import java.util.function.DoubleUnaryOperator;
  * @see <a href="http://www.open-std.org/JTC1/SC22/WG14/www/standards">
  *    ISO/IEC 9899 - Programming languages - C</a>
  */
-public final class Complex implements Serializable  {
+public final class Complex implements Serializable, ComplexDoubleArray, ComplexDouble {
     /**
      * A complex number representing \( i \), the square root of \( -1 \).
      *
@@ -86,7 +88,7 @@ public final class Complex implements Serializable  {
     public static final Complex ZERO = new Complex(0, 0);
 
     /** A complex number representing {@code NaN + i NaN}. */
-    private static final Complex NAN = new Complex(Double.NaN, Double.NaN);
+    public static final Complex NAN = new Complex(Double.NaN, Double.NaN);
     /** &pi;/2. */
     private static final double PI_OVER_2 = 0.5 * Math.PI;
     /** &pi;/4. */
@@ -237,6 +239,8 @@ public final class Complex implements Serializable  {
     /** The real part. */
     private final double real;
 
+
+
     /**
      * Define a constructor for a Complex.
      * This is used in functions that implement trigonomic identities.
@@ -262,6 +266,87 @@ public final class Complex implements Serializable  {
     private Complex(double real, double imaginary) {
         this.real = real;
         this.imaginary = imaginary;
+    }
+
+
+    @Override
+    public int size() {
+        return 1;
+    }
+
+    @Override
+    public MutableComplexDoubleArray asMutable() {
+        return MutableComplex.ofCartesian(this.real, this.imaginary);
+    }
+
+    @Override
+    public ComplexDoubleArray asImmutable() {
+        return this;
+    }
+
+    @Override
+    public void get(int index, int destIndex, int len, double[] realAndImgPairs) {
+        if (index != 0 || len != 1) {
+            throw new IndexOutOfBoundsException();
+        }
+        realAndImgPairs[destIndex] = real;
+        realAndImgPairs[destIndex + 1] = imaginary;
+
+    }
+
+    @Override
+    public ComplexDouble get(int index) {
+        if (index != 0) {
+            throw new IndexOutOfBoundsException();
+        }
+        return this;
+    }
+
+    /**
+     * To do.
+     * @param <T>
+     */
+    public static final class SingletonIterator<T> implements Iterable<T>, Iterator<T> {
+        /**
+         * To do.
+        */
+        private T element;
+
+        /**
+         * To do.
+        */
+        private boolean hasNext = true;
+
+        public SingletonIterator(T t) {
+            this.element = t;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return hasNext;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext) {
+                throw new NoSuchElementException();
+            }
+            hasNext = false;
+            return element;
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return this;
+        }
+    }
+
+    @Override
+    public Iterator<ComplexDouble> iterator(int index, int length) {
+        if (index != 0 || length != 1) {
+            throw new IndexOutOfBoundsException();
+        }
+        return new SingletonIterator<>(this);
     }
 
     /**

@@ -195,7 +195,6 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
         Complex oldValue = Complex.ofCartesian(realParts[index], imaginaryParts[index]);
         realParts[index] = element.getReal();
         imaginaryParts[index] = element.getImaginary();
-        Complex newValue = Complex.ofCartesian(realParts[index], imaginaryParts[index]);
         return oldValue;
 
     }
@@ -224,12 +223,6 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     @Override
     public final void clear() {
         modCount++;
-
-        // clear to let GC do its work
-        for (int i = 0; i < size; i++) {
-            realParts[i] = Double.parseDouble(null);
-            imaginaryParts[i] = Double.parseDouble(null);
-        }
         size = 0;
     }
 

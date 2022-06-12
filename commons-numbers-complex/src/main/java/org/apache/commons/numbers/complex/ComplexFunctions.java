@@ -776,11 +776,22 @@ public final class ComplexFunctions {
             changeSign(im, imaginary));
     }
 
+    public static ComplexDoubleArray conj(ComplexDoubleArray input, ComplexDoubleArray out) {
+        final int len = input.size();
+        MutableComplexDoubleArray result = out.asMutable().ensureCapacity(len);
+        for (int i = 0; i < len; i++) {
+            ComplexDouble c = input.get(i);
+            conj(c.real(), c.imag(), i, (ArrayComplexResult<MutableComplex>)result.get(i));
+        }
+        return result;
+    }
+
     public static <R> R conj(double r, double i, ComplexResult<R> result) {
         return result.apply(r, -i);
     }
-    public static <R> R ofCartesian(double r, double i, ComplexResult<R> result) {
-        return result.apply(r, i);
+
+    public static <R> R conj(double r, double i, int index, ArrayComplexResult<R> result) {
+        return result.apply(index, r, -i);
     }
 
 

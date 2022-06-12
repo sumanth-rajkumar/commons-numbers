@@ -275,16 +275,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     }
 
     @Override
-    public MutableComplexDoubleArray asMutable() {
-        return MutableComplex.ofCartesian(this.real, this.imaginary);
-    }
-
-    @Override
-    public ComplexDoubleArray asImmutable() {
-        return this;
-    }
-
-    @Override
     public void get(int index, int destIndex, int len, double[] realAndImgPairs) {
         if (index != 0 || len != 1) {
             throw new IndexOutOfBoundsException();
@@ -347,6 +337,26 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
             throw new IndexOutOfBoundsException();
         }
         return new SingletonIterator<>(this);
+    }
+
+    @Override
+    public ComplexDoubleArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
+        return Complex.ofCartesian(realAndImgPairs[sourceIndex], realAndImgPairs[sourceIndex + 1]);
+    }
+
+    @Override
+    public ComplexDoubleArray setValue(int index, ComplexDouble c) {
+        return Complex.ofCartesian(c.real(), c.imag());
+    }
+
+    @Override
+    public ComplexDoubleArray setValue(int index, double r, double i) {
+        return Complex.ofCartesian(r, i);
+    }
+
+    @Override
+    public void ensureCapacity(int capacity) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -736,21 +746,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     }
 
     /**
-     * Returns the
-     * <a href="http://mathworld.wolfram.com/ComplexConjugate.html">conjugate</a>
-     * \( \overline{z} \) of this complex number \( z \).
-     *
-     * <p>\[ \begin{aligned}
-     *                z  &amp;= a + i b \\
-     *      \overline{z} &amp;= a - i b \end{aligned}\]
-     *
-     * @return The conjugate (\( \overline{z} \)) of this complex number.
-     */
-    public Complex conj() {
-        return new Complex(real, -imaginary);
-    }
-
-    /**
      * Returns a {@code Complex} whose value is the negation of both the real and imaginary parts
      * of complex number \( z \).
      *
@@ -1118,8 +1113,32 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         return applyUnaryOperator(ComplexFunctions::exp);
     }
 
-    public Complex applyUnaryOperator(ComplexFunction operator) {
-        return operator.apply(this.real, this.imaginary, CARTESIAN_RESULT);
+    /**
+     * Returns the
+     * <a href="http://mathworld.wolfram.com/ComplexConjugate.html">conjugate</a>
+     * \( \overline{z} \) of this complex number \( z \).
+     *
+     * <p>\[ \begin{aligned}
+     *                z  &amp;= a + i b \\
+     *      \overline{z} &amp;= a - i b \end{aligned}\]
+     *
+     * @return The conjugate (\( \overline{z} \)) of this complex number.
+     */
+    public Complex conj() {
+        return this.applyUnaryOperator(ComplexFunctions::conj);
+    }
+
+    public Complex arrayConj() {
+        return apply(ComplexFunctions::conj);
+    }
+
+    public Complex applyUnaryOperator(ComplexFunction<Complex> operator) {
+        return operator.apply(this.real, this.imaginary, Complex::ofCartesian);
+    }
+
+    @Override
+    public Complex apply(ComplexDoubleUnaryOperator op) {
+        return (Complex)op.apply(this, this);
     }
 
     public Complex applyBinaryOperator(Complex input, ComplexBiFunction operator) {

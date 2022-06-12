@@ -19,12 +19,13 @@ package org.apache.commons.numbers.complex;
 
 import java.util.AbstractList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.commons.numbers.complex.Complex.CARTESIAN_RESULT;
 import static org.apache.commons.numbers.complex.Complex.negative;
 
-public class ComplexList extends AbstractList<Complex> implements List<Complex> {
+public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexDoubleArray {
     /** TODO. */
     private static final double[] DEFAULT_EMPTY = {};
     /** TODO. */
@@ -78,6 +79,11 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public void get(int index, int destIndex, int len, double[] realAndImgPairs) {
+
     }
 
     /** TODO.
@@ -184,12 +190,69 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
 
 
     @Override
-    public final Complex get(int index) {
+    public final ComplexDouble get(int index) {
         return Complex.ofCartesian(realParts[index], imaginaryParts[index]);
     }
 
+    /**
+     * To do.
+     * @param index
+     * @param length
+     * @return
+    */
     @Override
-    public final Complex set(int index, Complex element) {
+    public Iterator<ComplexDouble> iterator(int index, int length) {
+        //To do.
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * To do.
+     * @param index
+     * @param sourceIndex
+     * @param len
+     * @param realAndImgPairs
+     * @return
+    */
+    @Override
+    public ComplexDoubleArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
+        for (int i = 0; i < len; i += 2) {
+            final int srcOffset = sourceIndex + i * 2;
+            this.realParts[index + i] = realAndImgPairs[srcOffset];
+            this.imaginaryParts[index + i] = realAndImgPairs[srcOffset + 1];
+        }
+        return this;
+    }
+
+    /**
+     * To do.
+     * @param index
+     * @param c
+     * @return
+    */
+    @Override
+    public ComplexDoubleArray setValue(int index, ComplexDouble c) {
+        realParts[index] = c.getReal();
+        imaginaryParts[index] = c.getImaginary();
+        return this;
+    }
+
+    /**
+     * To do.
+     * @param index
+     * @param r
+     * @param i
+     * @return
+    */
+    @Override
+    public ComplexDoubleArray setValue(int index, double r, double i) {
+        realParts[index] = r;
+        imaginaryParts[index] = i;
+        return this;
+    }
+
+    @Override
+    public final ComplexDouble set(int index, ComplexDouble element) {
         rangeCheck(index);
 
         Complex oldValue = Complex.ofCartesian(realParts[index], imaginaryParts[index]);
@@ -228,7 +291,7 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
 
 
     @Override
-    public final boolean add(Complex element) {
+    public final boolean add(ComplexDouble element) {
         return add(element.getReal(), element.getImaginary());
     }
 
@@ -253,7 +316,7 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
     @Override
-    public final void add(int index, Complex element) {
+    public final void add(int index, ComplexDouble element) {
         rangeCheck(index);
         modCount++;
         final int s;
@@ -467,11 +530,11 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
 
-    public final Complex forEach(int index, ComplexFunction operator) {
+    public final Complex forEach(int index, ComplexFunction<Complex> operator) {
         return forEach(index, operator, Complex.CARTESIAN_RESULT);
     }
 
-    public final <R> R forEach(int index, ComplexFunction operator, ComplexResult<R> result) {
+    public final <R> R forEach(int index, ComplexFunction<R> operator, ComplexResult<R> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], result);
     }
@@ -488,7 +551,7 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
     }
 
 
-    public final ComplexList forEach(ComplexFunction operator) {
+    public final ComplexList forEach(ComplexFunction<Void> operator) {
         return  forEach(0, size, operator);
     }
     public final ComplexList forEach(int startIndex, int length, ComplexFunction operator) {
@@ -496,15 +559,11 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
         int s = getDestinationStartIndex(startIndex, length);
-        int offset = startIndex - s;
-        int len = length + s;
-        for (int i = s; i < len; i++) {
-            final int destinationIndex = i;
-            operator.apply(this.realParts[i + offset], this.imaginaryParts[i + offset], (x, y) -> {
-                destinationRealPart[destinationIndex] = x;
-                destinationImaginaryPart[destinationIndex] = y;
-                return null;
-            });
+        Cursor cursor = new Cursor(destinationRealPart, destinationImaginaryPart,
+            realParts, imaginaryParts, startIndex, s);
+        for (int i = 0; i < length; i++) {
+            cursor.setIndex(i);
+            operator.apply(cursor.getReal(), cursor.getImaginary(), cursor);
         }
         return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
@@ -524,22 +583,95 @@ public class ComplexList extends AbstractList<Complex> implements List<Complex> 
             operator);
     }
 
+    private static final class Cursor  implements ComplexDouble, ComplexResult<Void> {
+        /**
+         * To do.
+        */
+        private int offset;
+
+        /**
+         * To do.
+         */
+        private int destStart;
+
+        /**
+         * To do.
+         */
+        private int srcStart;
+        /**
+         * To do.
+        */
+        private double[] destinationRealPart;
+
+        /**
+         * To do.
+        */
+        private double[] destinationImgPart;
+
+        /**
+         * To do.
+         */
+        private double[] srcRealPart;
+
+        /**
+         * To do.
+         */
+        private double[] srcImgPart;
+
+        private Cursor(double[] r, double[] i, double[] sr, double[] si, int s, int d) {
+            destinationRealPart = r;
+            destinationImgPart = i;
+            srcRealPart = sr;
+            srcImgPart = si;
+            srcStart = s;
+            destStart = d;
+        }
+
+        @Override
+        public Void apply(double r, double i) {
+            int of = destStart + offset;
+            destinationRealPart[of] = r;
+            destinationImgPart[of] = i;
+            return null;
+        }
+
+        public void setIndex(int i) {
+            offset = i;
+        }
+
+        @Override
+        public double getReal() {
+            return srcRealPart[srcStart + offset];
+        }
+
+        @Override
+        public double getImaginary() {
+            return srcImgPart[srcStart + offset];
+        }
+
+        @Override
+        public double real() {
+            return srcRealPart[srcStart + offset];
+        }
+
+        @Override
+        public double imag() {
+            return srcImgPart[srcStart + offset];
+        }
+    }
     public final ComplexList forEach(int startIndex, int length, double realOperand,
                                      double imaginaryOperand, ComplexBiFunction operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
         int s = getDestinationStartIndex(startIndex, length);
-        int offset = startIndex - s;
-        int len = length + s;
-        for (int i = s; i < len; i++) {
-            final int destinationIndex = i;
-            operator.apply(this.realParts[i + offset], this.imaginaryParts[i + offset], realOperand,
-                                                     imaginaryOperand, (x, y) -> {
-                    destinationRealPart[destinationIndex] = x;
-                    destinationImaginaryPart[destinationIndex] = y;
-                    return null;
-                });
+        Cursor cursor = new Cursor(destinationRealPart, destinationImaginaryPart,
+            realParts, imaginaryParts, startIndex, s);
+
+        for (int i = 0; i < length; i++) {
+            cursor.setIndex(i);
+            operator.apply(cursor.getReal(), cursor.getImaginary(), realOperand,
+                                                     imaginaryOperand, cursor);
         }
         return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }

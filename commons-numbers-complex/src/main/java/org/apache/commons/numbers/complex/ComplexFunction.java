@@ -18,7 +18,7 @@
 package org.apache.commons.numbers.complex;
 
 @FunctionalInterface
-public interface ComplexFunction {
+public interface ComplexFunction<R> {
 
-    <R> R apply(double r, double i, ComplexResult<R> result);
+    R apply(double r, double i, ComplexResult<R> result);
 }

@@ -17,10 +17,11 @@
 
 package org.apache.commons.numbers.complex;
 
+
 import java.util.Iterator;
 
 
-public interface ComplexDoubleArray extends Iterable<ComplexDouble> {
+public interface ComplexDoubleArray extends Iterable<ComplexDouble>, ComplexArrayResult {
 
     int size();
 
@@ -28,11 +29,8 @@ public interface ComplexDoubleArray extends Iterable<ComplexDouble> {
         return true;
     }
 
-    MutableComplexDoubleArray asMutable();
 
-    ComplexDoubleArray asImmutable();
-
-    default double[] toArray() {
+    default double[] toDoubleArray() {
         final int len = size();
         final double[] result = new double[len * 2];
         get(0, 0, len, result);
@@ -54,6 +52,16 @@ public interface ComplexDoubleArray extends Iterable<ComplexDouble> {
     default Iterator<ComplexDouble> iterator() {
         return iterator(0, size());
     }
+
     Iterator<ComplexDouble> iterator(int index, int length);
+
+    ComplexDoubleArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs);
+
+    ComplexDoubleArray setValue(int index, ComplexDouble c);
+
+    ComplexDoubleArray setValue(int index, double r, double i);
+
+    void ensureCapacity(int capacity);
+
 
 }

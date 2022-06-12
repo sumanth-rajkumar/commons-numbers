@@ -87,6 +87,21 @@ public class ComplexListTest {
         list.forEach(ComplexFunctions::conj).multiply(Complex.ofCartesian(1, 1));
     }
     /**
+     * Test list forEach conj.
+     */
+    @Test
+    void testArrayConj() {
+        final ComplexDoubleArray list = createList();
+
+        final ComplexDoubleArray originalCopy = ComplexList.parse(list.toString());
+
+        //conjugate of conjugate - should get back original
+        list.apply(ComplexFunctions::conj).apply(ComplexFunctions::conj);
+
+        Assertions.assertEquals(list, originalCopy);
+
+    }
+    /**
      * Test list multiply.
      */
     @Test
@@ -98,7 +113,7 @@ public class ComplexListTest {
 
         list.multiply(y);
 
-        final Complex z = list.get(0);
+        final ComplexDouble z = list.get(0);
 
         Assertions.assertEquals(-9.0, z.getReal());
         Assertions.assertEquals(38.0, z.getImaginary());

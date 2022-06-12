@@ -778,20 +778,20 @@ public final class ComplexFunctions {
 
     public static ComplexDoubleArray conj(ComplexDoubleArray input, ComplexDoubleArray out) {
         final int len = input.size();
-        MutableComplexDoubleArray result = out.asMutable().ensureCapacity(len);
         for (int i = 0; i < len; i++) {
             ComplexDouble c = input.get(i);
-            conj(c.real(), c.imag(), i, (ArrayComplexResult<MutableComplex>)result.get(i));
+            out = arrayConj(c.real(), c.imag(), out, i);
         }
-        return result;
+        return out;
+    }
+
+    public static ComplexDoubleArray arrayConj(double r, double i,
+                                     ComplexArrayResult<ComplexDoubleArray> resultConsumer, int index) {
+        return resultConsumer.setValue(index, r, -i);
     }
 
     public static <R> R conj(double r, double i, ComplexResult<R> result) {
         return result.apply(r, -i);
-    }
-
-    public static <R> R conj(double r, double i, int index, ArrayComplexResult<R> result) {
-        return result.apply(index, r, -i);
     }
 
 

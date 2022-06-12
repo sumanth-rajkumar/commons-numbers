@@ -18,22 +18,10 @@
 package org.apache.commons.numbers.complex;
 
 
-public interface MutableComplexDoubleArray extends ComplexDoubleArray {
-    MutableComplexDoubleArray set(int index, int sourceIndex, int len, double[] realAndImgPairs);
+@FunctionalInterface
+public  interface ComplexArrayResult<R> {
 
-    MutableComplexDoubleArray set(int index, ComplexDouble c);
-
-
-    MutableComplexDoubleArray add(int index, ComplexDouble c);
-
-    MutableComplexDoubleArray ensureCapacity(int capacity);
-
-    default Iterable<MutableComplex> mutableIterator() {
-        return  mutableIterator(0, size());
-    }
-
-    default Iterable<MutableComplex> mutableIterator(int index, int length) {
-        return (Iterable<MutableComplex>) iterator(index, length);
-    }
+    R setValue(int index, double r, double i);
 
 }
+

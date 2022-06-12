@@ -19,6 +19,10 @@ package org.apache.commons.numbers.complex;
 
 public interface ComplexDouble {
 
+    double getReal();
+
+    double getImaginary();
+
     double real();
     double imag();
 }

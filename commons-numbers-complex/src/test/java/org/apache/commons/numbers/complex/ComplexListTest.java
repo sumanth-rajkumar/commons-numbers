@@ -80,6 +80,23 @@ public class ComplexListTest {
         final ComplexList originalCopy = ComplexList.parse(list.toString());
 
         //conjugate of conjugate - should get back original
+        list.conj().conj();
+
+        Assertions.assertEquals(list, originalCopy);
+
+        list.conj().multiply(Complex.ofCartesian(1, 1));
+    }
+
+    /**
+     * Test list forEach conj.
+     */
+    @Test
+    void testForEachConj() {
+        final ComplexList list = createList();
+
+        final ComplexList originalCopy = ComplexList.parse(list.toString());
+
+        //conjugate of conjugate - should get back original
         list.forEach(ComplexFunctions::conj).forEach(ComplexFunctions::conj);
 
         Assertions.assertEquals(list, originalCopy);
@@ -91,7 +108,7 @@ public class ComplexListTest {
      */
     @Test
     void testArrayConj() {
-        final ComplexDoubleArray list = createList();
+        final ComplexList list = createList();
 
         final ComplexDoubleArray originalCopy = ComplexList.parse(list.toString());
 

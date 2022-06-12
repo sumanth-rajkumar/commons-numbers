@@ -681,7 +681,8 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
     }
 
     public final ComplexList conj() {
-        return forEach(0, size, ComplexFunctions::conj);
+        return (ComplexList) apply(ComplexFunctions::conj);
+        //return forEach(0, size, ComplexFunctions::conj);
     }
 
     public final ComplexList conj(int startIndex, int length) {

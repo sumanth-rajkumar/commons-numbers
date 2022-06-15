@@ -80,7 +80,7 @@ public class ComplexListTest {
         final ComplexList originalCopy = ComplexList.parse(list.toString());
 
         //conjugate of conjugate - should get back original
-        list.conj().conj();
+        list.conj();
 
         Assertions.assertEquals(list, originalCopy);
 
@@ -113,7 +113,7 @@ public class ComplexListTest {
         final ComplexDoubleArray originalCopy = ComplexList.parse(list.toString());
 
         //conjugate of conjugate - should get back original
-        list.apply(ComplexFunctions::conj).apply(ComplexFunctions::conj);
+        list.apply(ComplexArrayFunctions::conj).apply(ComplexArrayFunctions::conj);
 
         Assertions.assertEquals(list, originalCopy);
 
@@ -134,5 +134,19 @@ public class ComplexListTest {
 
         Assertions.assertEquals(-9.0, z.getReal());
         Assertions.assertEquals(38.0, z.getImaginary());
+    }
+    /**
+     * Test list array exp
+     */
+    @Test
+    void testArrayExp() {
+        final ComplexList list = createList();
+
+        final ComplexDoubleArray originalCopy = ComplexList.parse(list.toString());
+
+        //exp
+
+
+        Assertions.assertEquals(list, originalCopy);
     }
 }

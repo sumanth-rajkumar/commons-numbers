@@ -32,7 +32,7 @@ public  interface ComplexResult<R> {
 
     default ComplexResult<R> compose(ComplexFunction<R> before) {
         Objects.requireNonNull(before);
-        return (r, i) -> before.apply(r, i, (x, y) -> apply(x, y));
+        return (r, i) -> before.apply(r, i, this::apply);
     }
 }
 

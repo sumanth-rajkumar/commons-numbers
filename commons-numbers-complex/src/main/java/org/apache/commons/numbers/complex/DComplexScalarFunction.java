@@ -17,12 +17,15 @@
 
 package org.apache.commons.numbers.complex;
 
-public interface ComplexDouble {
+import java.util.Objects;
 
-    double getReal();
+@FunctionalInterface
+public interface DComplexScalarFunction {
+    DComplex apply(DComplex c, double f, DComplexConstructor<DComplex> result);
 
-    double getImaginary();
+    default <V extends DComplex> DComplexScalarFunction thenApply(DComplexUnaryOperator after) {
+        Objects.requireNonNull(after);
+        return (DComplex c, double f, DComplexConstructor<DComplex> out) -> after.apply(apply(c, f, out), out);
 
-    double real();
-    double imag();
+    }
 }

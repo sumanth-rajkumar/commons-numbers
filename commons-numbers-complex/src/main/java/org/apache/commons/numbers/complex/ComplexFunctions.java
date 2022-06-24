@@ -14,42 +14,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.commons.numbers.complex;
 
-
-import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 
 public final class ComplexFunctions {
 
     /**
-     * A complex number representing one.
-     *
-     * <p>\( (1 + i 0) \).
-     */
-    public static final ComplexResult<Complex> ONE = (x, y) -> Complex.ofCartesian(1, 0);
-    /**
      * A complex number representing zero.
      *
      * <p>\( (0 + i 0) \).
      */
-    public static final ComplexResult<Complex> ZERO = (x, y) -> Complex.ofCartesian(0, 0);
+    public static final Complex ZERO = Complex.ZERO;
 
     /** A complex number representing {@code NaN + i NaN}. */
-    public static final ComplexResult<Complex> NAN = (x, y) -> Complex.ofCartesian(Double.NaN, Double.NaN);
+    public static final DComplex NAN = Complex.NAN;
+
+
+    /** The bit representation of {@code -0.0}. */
+    static final long NEGATIVE_ZERO_LONG_BITS = Double.doubleToLongBits(-0.0);
+    /** Exponent offset in IEEE754 representation. */
+    static final int EXPONENT_OFFSET = 1023;
+
+    /** Mask to remove the sign bit from a long. */
+    static final long UNSIGN_MASK = 0x7fff_ffff_ffff_ffffL;
+    /** Mask to extract the 52-bit mantissa from a long representation of a double. */
+    static final long MANTISSA_MASK = 0x000f_ffff_ffff_ffffL;
+
     /** &pi;/2. */
     private static final double PI_OVER_2 = 0.5 * Math.PI;
     /** &pi;/4. */
     private static final double PI_OVER_4 = 0.25 * Math.PI;
     /** Natural logarithm of 2 (ln(2)). */
     private static final double LN_2 = Math.log(2);
+    /** {@code 1/2}. */
+    private static final double HALF = 0.5;
     /** Base 10 logarithm of 10 divided by 2 (log10(e)/2). */
     private static final double LOG_10E_O_2 = Math.log10(Math.E) / 2;
     /** Base 10 logarithm of 2 (log10(2)). */
     private static final double LOG10_2 = Math.log10(2);
-    /** {@code 1/2}. */
-    private static final double HALF = 0.5;
     /** {@code sqrt(2)}. */
     private static final double ROOT2 = 1.4142135623730951;
     /** {@code 1.0 / sqrt(2)}.
@@ -57,10 +60,7 @@ public final class ComplexFunctions {
      * It is 1 ULP different from 1.0 / Math.sqrt(2) but equal to Math.sqrt(2) / 2.
      */
     private static final double ONE_OVER_ROOT2 = 0.7071067811865476;
-    /** The bit representation of {@code -0.0}. */
-    private static final long NEGATIVE_ZERO_LONG_BITS = Double.doubleToLongBits(-0.0);
-    /** Exponent offset in IEEE754 representation. */
-    private static final int EXPONENT_OFFSET = 1023;
+
     /**
      * Largest double-precision floating-point number such that
      * {@code 1 + EPSILON} is numerically equal to 1. This value is an upper
@@ -73,10 +73,7 @@ public final class ComplexFunctions {
      * @see <a href="http://en.wikipedia.org/wiki/Machine_epsilon">Machine epsilon</a>
      */
     private static final double EPSILON = Double.longBitsToDouble((EXPONENT_OFFSET - 53L) << 52);
-    /** Mask to remove the sign bit from a long. */
-    private static final long UNSIGN_MASK = 0x7fff_ffff_ffff_ffffL;
-    /** Mask to extract the 52-bit mantissa from a long representation of a double. */
-    private static final long MANTISSA_MASK = 0x000f_ffff_ffff_ffffL;
+
     /** The multiplier used to split the double value into hi and low parts. This must be odd
      * and a value of 2^s + 1 in the range {@code p/2 <= s <= p-1} where p is the number of
      * bits of precision of the floating point number. Here {@code s = 27}.*/
@@ -160,82 +157,54 @@ public final class ComplexFunctions {
     /** 2^-600. */
     private static final double TWO_POW_NEG_600 = 0x1.0p-600;
 
-    /** Serializable version identifier. */
-    private static final long serialVersionUID = 20180201L;
-
-    /**
-     * The size of the buffer for {@link #toString()}.
-     *
-     * <p>The longest double will require a sign, a maximum of 17 digits, the decimal place
-     * and the exponent, e.g. for max value this is 24 chars: -1.7976931348623157e+308.
-     * Set the buffer size to twice this and round up to a power of 2 thus
-     * allowing for formatting characters. The size is 64.
-     */
-    private static final int TO_STRING_SIZE = 64;
-    /** The minimum number of characters in the format. This is 5, e.g. {@code "(0,0)"}. */
-    private static final int FORMAT_MIN_LEN = 5;
-    /** {@link #toString() String representation}. */
-    private static final char FORMAT_START = '(';
-    /** {@link #toString() String representation}. */
-    private static final char FORMAT_END = ')';
-    /** {@link #toString() String representation}. */
-    private static final char FORMAT_SEP = ',';
-    /** The minimum number of characters before the separator. This is 2, e.g. {@code "(0"}. */
-    private static final int BEFORE_SEP = 2;
-
     private ComplexFunctions() {
-
     }
-    public static <R> R negate(double r, double i, ComplexResult<R> result) {
+
+    public static DComplex negate(double r, double i, DComplexConstructor<DComplex> result) {
         return result.apply(-r, -i);
     }
-    public static <R> R multiplyIma(double r, double i, ComplexResult<R> result) {
+    public static DComplex negate(DComplex c, DComplexConstructor<DComplex> result) {
+        return negate(c.getReal(), c.getImaginary(), result);
+    }
+    public static DComplex multiplyImaginary(double r, double i, DComplexConstructor<DComplex> result) {
         return result.apply(-1 * i, r);
+    }
+    public static DComplex multiplyImaginary(DComplex c, DComplexConstructor<DComplex> result) {
+        return multiplyImaginary(c.getReal(), c.getImaginary(), result);
     }
     /**
      * Returns {@code true} if either real or imaginary component of the complex number is infinite.
      *
      * <p>Note: A complex number with at least one infinite part is regarded
      * as an infinity (even if its other part is a NaN).
-     *
+     * @param real
+     * @param imaginary
      * @return {@code true} if this instance contains an infinite value.
      * @see Double#isInfinite(double)
      */
-    public static boolean isInfinite(double real, double imaginary) {
+    private static boolean isInfinite(double real, double imaginary) {
         return Double.isInfinite(real) || Double.isInfinite(imaginary);
     }
-    public static <R> R proj(double r, double i, ComplexResult<R> result) {
-        if (isInfinite(r, i)) {
-            return result.apply(Double.POSITIVE_INFINITY, Math.copySign(0.0, i));
+    public static boolean isInfinite(DComplex c) {
+        return isInfinite(c.getReal(), c.getImaginary());
+    }
+
+    public static DComplex proj(DComplex c, DComplexConstructor<DComplex> result) {
+        if (isInfinite(c)) {
+            return result.apply(Double.POSITIVE_INFINITY, Math.copySign(0.0, c.getImaginary()));
         }
-        return result.apply(r, i);
+        return c;
+    }
+    public static double abs(double real, double imaginary) {
+        // Specialised implementation of hypot.
+        // See NUMBERS-143
+        return hypot(real, imaginary);
     }
     public static double arg(double r, double i) {
         // Delegate
-        return Math.atan2(r, i);
+        return Math.atan2(i, r);
     }
-    /**
-     * Returns the squared norm value of this complex number. This is also called the absolute
-     * square.
-     *
-     * <p>\[ \text{norm}(x + i y) = x^2 + y^2 \]
-     *
-     * <p>If either component is infinite then the result is positive infinity. If either
-     * component is NaN and this is not {@link #isInfinite(double, double) infinite} then the result is NaN.
-     *
-     * <p>Note: This method may not return the same value as the square of {@link #/abs()} as
-     * that method uses an extended precision computation.
-     *
-     * <p>{@code norm()} can be used as a faster alternative than {@code abs()} for ranking by
-     * magnitude. If used for ranking any overflow to infinity will create an equal ranking for
-     * values that may be still distinguished by {@code abs()}.
-     *
-     * @return The square norm value.
-     * @see #isInfinite(double, double)
-     * @see #//isNaN()
-     * @see #//abs()
-     * @see <a href="http://mathworld.wolfram.com/AbsoluteSquare.html">Absolute square</a>
-     */
+
     public static double norm(double real, double imaginary) {
         if (isInfinite(real, imaginary)) {
             return Double.POSITIVE_INFINITY;
@@ -243,34 +212,6 @@ public final class ComplexFunctions {
         return real * real + imaginary * imaginary;
     }
 
-
-
-    /**
-     * Returns the absolute value of the complex number.
-     * <pre>abs(x + i y) = sqrt(x^2 + y^2)</pre>
-     *
-     * <p>This should satisfy the special cases of the hypot function in ISO C99 F.9.4.3:
-     * "The hypot functions compute the square root of the sum of the squares of x and y,
-     * without undue overflow or underflow."
-     *
-     * <ul>
-     * <li>hypot(x, y), hypot(y, x), and hypot(x, −y) are equivalent.
-     * <li>hypot(x, ±0) is equivalent to |x|.
-     * <li>hypot(±∞, y) returns +∞, even if y is a NaN.
-     * </ul>
-     *
-     * <p>This method is called by all methods that require the absolute value of the complex
-     * number, e.g. abs(), sqrt() and log().
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @return The absolute value.
-     */
-    public static double abs(double real, double imaginary) {
-        // Specialised implementation of hypot.
-        // See NUMBERS-143
-        return hypot(real, imaginary);
-    }
     /**
      * Returns {@code sqrt(x^2 + y^2)} without intermediate overflow or underflow.
      *
@@ -487,257 +428,8 @@ public final class ComplexFunctions {
         // and reducing error to < 0.5 ulp for the final sqrt.
         return xx - r + yy + yyLow + xxLow + r;
     }
-    public static <R> R add(double r1, double i1, double r2, double i2, ComplexResult<R> result) {
-        return result.apply(r1 + r2, i1 + i2);
-    }
 
-    /**
-     * Returns a {@code Complex} whose value is:
-     * <pre>
-     *  (a + i b)(c + i d) = (ac - bd) + i (ad + bc)</pre>
-     *
-     * <p>Recalculates to recover infinities as specified in C99 standard G.5.1.
-     *
-     * @param r1 Real component of first number.
-     * @param i1 Imaginary component of first number.
-     * @param r2 Real component of second number.
-     * @param i2 Imaginary component of second number.
-     * @param <R> Generic
-     * @param result Complex result
-     * @return (a + b i)(c + d i).
-     */
-    public static <R> R multiply(double r1, double i1, double r2, double i2, ComplexResult<R> result) {
-        double a = r1;
-        double b = i1;
-        double c = r2;
-        double d = i2;
-        final double ac = a * c;
-        final double bd = b * d;
-        final double ad = a * d;
-        final double bc = b * c;
-        double x = ac - bd;
-        double y = ad + bc;
-
-        // --------------
-        // NaN can occur if:
-        // - any of (a,b,c,d) are NaN (for NaN or Infinite complex numbers)
-        // - a multiplication of infinity by zero (ac,bd,ad,bc).
-        // - a subtraction of infinity from infinity (e.g. ac - bd)
-        //   Note that (ac,bd,ad,bc) can be infinite due to overflow.
-        //
-        // Detect a NaN result and perform correction.
-        //
-        // Modification from the listing in ISO C99 G.5.1 (6)
-        // Do not correct infinity multiplied by zero. This is left as NaN.
-        // --------------
-
-        if (Double.isNaN(x) && Double.isNaN(y)) {
-            // Recover infinities that computed as NaN+iNaN ...
-            boolean recalc = false;
-            if ((Double.isInfinite(a) || Double.isInfinite(b)) &&
-                isNotZero(c, d)) {
-                // This complex is infinite.
-                // "Box" the infinity and change NaNs in the other factor to 0.
-                a = boxInfinity(a);
-                b = boxInfinity(b);
-                c = changeNaNtoZero(c);
-                d = changeNaNtoZero(d);
-                recalc = true;
-            }
-            if ((Double.isInfinite(c) || Double.isInfinite(d)) &&
-                isNotZero(a, b)) {
-                // The other complex is infinite.
-                // "Box" the infinity and change NaNs in the other factor to 0.
-                c = boxInfinity(c);
-                d = boxInfinity(d);
-                a = changeNaNtoZero(a);
-                b = changeNaNtoZero(b);
-                recalc = true;
-            }
-            if (!recalc && (Double.isInfinite(ac) || Double.isInfinite(bd) ||
-                Double.isInfinite(ad) || Double.isInfinite(bc))) {
-                // The result overflowed to infinity.
-                // Recover infinities from overflow by changing NaNs to 0 ...
-                a = changeNaNtoZero(a);
-                b = changeNaNtoZero(b);
-                c = changeNaNtoZero(c);
-                d = changeNaNtoZero(d);
-                recalc = true;
-            }
-            if (recalc) {
-                x = Double.POSITIVE_INFINITY * (a * c - b * d);
-                y = Double.POSITIVE_INFINITY * (a * d + b * c);
-            }
-        }
-        return result.apply(x, y);
-    }
-    /**
-     * Box values for the real or imaginary component of an infinite complex number.
-     * Any infinite value will be returned as one. Non-infinite values will be returned as zero.
-     * The sign is maintained.
-     *
-     * <pre>
-     *  inf  =  1
-     * -inf  = -1
-     *  x    =  0
-     * -x    = -0
-     * </pre>
-     *
-     * @param component the component
-     * @return The boxed value
-     */
-    private static double boxInfinity(double component) {
-        return Math.copySign(Double.isInfinite(component) ? 1.0 : 0.0, component);
-    }
-
-    /**
-     * Checks if the complex number is not zero.
-     *
-     * @param real the real component
-     * @param imaginary the imaginary component
-     * @return true if the complex is not zero
-     */
-    private static boolean isNotZero(double real, double imaginary) {
-        // The use of equals is deliberate.
-        // This method must distinguish NaN from zero thus ruling out:
-        // (real != 0.0 || imaginary != 0.0)
-        return !(real == 0.0 && imaginary == 0.0);
-    }
-
-    /**
-     * Change NaN to zero preserving the sign; otherwise return the value.
-     *
-     * @param value the value
-     * @return The new value
-     */
-    private static double changeNaNtoZero(double value) {
-        return Double.isNaN(value) ? Math.copySign(0.0, value) : value;
-    }
-
-
-    /**
-     * Returns a {@code Complex} whose value is:
-     * <pre>
-     * <code>
-     *   a + i b     (ac + bd) + i (bc - ad)
-     *   -------  =  -----------------------
-     *   c + i d            c<sup>2</sup> + d<sup>2</sup>
-     * </code>
-     * </pre>
-     *
-     * <p>Recalculates to recover infinities as specified in C99
-     * standard G.5.1. Method is fully in accordance with
-     * C++11 standards for complex numbers.</p>
-     *
-     * <p>Note: In the event of divide by zero this method produces the same result
-     * as dividing by a real-only zero using {@link #(double)}.
-     *
-     * @param re1 Real component of first number.
-     * @param im1 Imaginary component of first number.
-     * @param re2 Real component of second number.
-     * @param im2 Imaginary component of second number.
-     * @param <R> Generic
-     * @param result Complex result
-     * @return (a + i b) / (c + i d).
-     * @see <a href="http://mathworld.wolfram.com/ComplexDivision.html">Complex Division</a>
-     * @see #(double)
-     */
-    public static <R> R divide(double re1, double im1, double re2, double im2, ComplexResult<R> result) {
-        double a = re1;
-        double b = im1;
-        double c = re2;
-        double d = im2;
-        int ilogbw = 0;
-        // Get the exponent to scale the divisor parts to the range [1, 2).
-        final int exponent = getScale(c, d);
-        if (exponent <= Double.MAX_EXPONENT) {
-            ilogbw = exponent;
-            c = Math.scalb(c, -ilogbw);
-            d = Math.scalb(d, -ilogbw);
-        }
-        final double denom = c * c + d * d;
-
-        // Note: Modification from the listing in ISO C99 G.5.1 (8):
-        // Avoid overflow if a or b are very big.
-        // Since (c, d) in the range [1, 2) the sum (ac + bd) could overflow
-        // when (a, b) are both above (Double.MAX_VALUE / 4). The same applies to
-        // (bc - ad) with large negative values.
-        // Use the maximum exponent as an approximation to the magnitude.
-        if (getMaxExponent(a, b) > Double.MAX_EXPONENT - 2) {
-            ilogbw -= 2;
-            a /= 4;
-            b /= 4;
-        }
-
-        double x = Math.scalb((a * c + b * d) / denom, -ilogbw);
-        double y = Math.scalb((b * c - a * d) / denom, -ilogbw);
-        // Recover infinities and zeros that computed as NaN+iNaN
-        // the only cases are nonzero/zero, infinite/finite, and finite/infinite, ...
-        if (Double.isNaN(x) && Double.isNaN(y)) {
-            if ((denom == 0.0) &&
-                (!Double.isNaN(a) || !Double.isNaN(b))) {
-                // nonzero/zero
-                // This case produces the same result as divide by a real-only zero
-                // using Complex.divide(+/-0.0)
-                x = Math.copySign(Double.POSITIVE_INFINITY, c) * a;
-                y = Math.copySign(Double.POSITIVE_INFINITY, c) * b;
-            } else if ((Double.isInfinite(a) || Double.isInfinite(b)) &&
-                Double.isFinite(c) && Double.isFinite(d)) {
-                // infinite/finite
-                a = boxInfinity(a);
-                b = boxInfinity(b);
-                x = Double.POSITIVE_INFINITY * (a * c + b * d);
-                y = Double.POSITIVE_INFINITY * (b * c - a * d);
-            } else if ((Double.isInfinite(c) || Double.isInfinite(d)) &&
-                Double.isFinite(a) && Double.isFinite(b)) {
-                // finite/infinite
-                c = boxInfinity(c);
-                d = boxInfinity(d);
-                x = 0.0 * (a * c + b * d);
-                y = 0.0 * (b * c - a * d);
-            }
-        }
-        return result.apply(x, y);
-    }
-    /**
-     * Returns the
-     * <a href="http://mathworld.wolfram.com/ExponentialFunction.html">
-     * exponential function</a> of this complex number.
-     *
-     * <p>\[ \exp(z) = e^z \]
-     *
-     * <p>The exponential function of \( z \) is an entire function in the complex plane.
-     * Special cases:
-     *
-     * <ul>
-     * <li>{@code z.conj().exp() == z.exp().conj()}.
-     * <li>If {@code z} is ±0 + i0, returns 1 + i0.
-     * <li>If {@code z} is x + i∞ for finite x, returns NaN + iNaN ("invalid" floating-point operation).
-     * <li>If {@code z} is x + iNaN for finite x, returns NaN + iNaN ("invalid" floating-point operation).
-     * <li>If {@code z} is +∞ + i0, returns +∞ + i0.
-     * <li>If {@code z} is −∞ + iy for finite y, returns +0 cis(y).
-     * <li>If {@code z} is +∞ + iy for finite nonzero y, returns +∞ cis(y).
-     * <li>If {@code z} is −∞ + i∞, returns ±0 ± i0 (where the signs of the real and imaginary parts of the result are unspecified).
-     * <li>If {@code z} is +∞ + i∞, returns ±∞ + iNaN (where the sign of the real part of the result is unspecified; "invalid" floating-point operation).
-     * <li>If {@code z} is −∞ + iNaN, returns ±0 ± i0 (where the signs of the real and imaginary parts of the result are unspecified).
-     * <li>If {@code z} is +∞ + iNaN, returns ±∞ + iNaN (where the sign of the real part of the result is unspecified).
-     * <li>If {@code z} is NaN + i0, returns NaN + i0.
-     * <li>If {@code z} is NaN + iy for all nonzero numbers y, returns NaN + iNaN ("invalid" floating-point operation).
-     * <li>If {@code z} is NaN + iNaN, returns NaN + iNaN.
-     * </ul>
-     *
-     * <p>Implements the formula:
-     *
-     * <p>\[ \exp(x + iy) = e^x (\cos(y) + i \sin(y)) \]
-     * @param <R> Generic
-     * @param result Complex result
-     * @param r Real part
-     * @param i Imaginary part
-     * @return The exponential of this complex number.
-     * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Exp/">Exp</a>
-     */
-
-    public static <R> R exp(double r, double i, ComplexResult<R> result) {
+    public static DComplex exp(double r, double i, DComplexConstructor<DComplex> result) {
         if (Double.isInfinite(r)) {
             // Set the scale factor applied to cis(y)
             double zeroOrInf;
@@ -794,19 +486,22 @@ public final class ComplexFunctions {
             exp * Math.sin(i));
 
     }
+    public static DComplex exp(DComplex c, DComplexConstructor<DComplex> result) {
+        return exp(c.getReal(), c.getImaginary(), result);
+    }
 
-    /**
-     * Check that a value is negative. It must meet all the following conditions:
-     * <ul>
-     *  <li>it is not {@code NaN},</li>
-     *  <li>it is negative signed,</li>
-     * </ul>
-     *
-     * <p>Note: This is true for negative zero.</p>
-     *
-     * @param d Value.
-     * @return {@code true} if {@code d} is negative.
-     */
+        /**
+         * Check that a value is negative. It must meet all the following conditions:
+         * <ul>
+         *  <li>it is not {@code NaN},</li>
+         *  <li>it is negative signed,</li>
+         * </ul>
+         *
+         * <p>Note: This is true for negative zero.</p>
+         *
+         * @param d Value.
+         * @return {@code true} if {@code d} is negative.
+         */
     static boolean negative(double d) {
         return d < 0 || Double.doubleToLongBits(d) == NEGATIVE_ZERO_LONG_BITS;
     }
@@ -830,67 +525,6 @@ public final class ComplexFunctions {
      */
     private static double changeSign(double magnitude, double signedValue) {
         return negative(signedValue) ? -magnitude : magnitude;
-    }
-
-    /**
-     * Returns a scale suitable for use with {@link Math#scalb(double, int)} to normalise
-     * the number to the interval {@code [1, 2)}.
-     *
-     * <p>The scale is typically the largest unbiased exponent used in the representation of the
-     * two numbers. In contrast to {@link Math#getExponent(double)} this handles
-     * sub-normal numbers by computing the number of leading zeros in the mantissa
-     * and shifting the unbiased exponent. The result is that for all finite, non-zero,
-     * numbers {@code a, b}, the magnitude of {@code scalb(x, -getScale(a, b))} is
-     * always in the range {@code [1, 2)}, where {@code x = max(|a|, |b|)}.
-     *
-     * <p>This method is a functional equivalent of the c function ilogb(double) adapted for
-     * two input arguments.
-     *
-     * <p>The result is to be used to scale a complex number using {@link Math#scalb(double, int)}.
-     * Hence the special case of both zero arguments is handled using the return value for NaN
-     * as zero cannot be scaled. This is different from {@link Math#getExponent(double)}
-     * or {@link #getMaxExponent(double, double)}.
-     *
-     * <p>Special cases:
-     *
-     * <ul>
-     * <li>If either argument is NaN or infinite, then the result is
-     * {@link Double#MAX_EXPONENT} + 1.
-     * <li>If both arguments are zero, then the result is
-     * {@link Double#MAX_EXPONENT} + 1.
-     * </ul>
-     *
-     * @param a the first value
-     * @param b the second value
-     * @return The maximum unbiased exponent of the values to be used for scaling
-     * @see Math#getExponent(double)
-     * @see Math#scalb(double, int)
-     * @see <a href="http://www.cplusplus.com/reference/cmath/ilogb/">ilogb</a>
-     */
-    private static int getScale(double a, double b) {
-        // Only interested in the exponent and mantissa so remove the sign bit
-        final long x = Double.doubleToRawLongBits(a) & UNSIGN_MASK;
-        final long y = Double.doubleToRawLongBits(b) & UNSIGN_MASK;
-        // Only interested in the maximum
-        final long bits = Math.max(x, y);
-        // Get the unbiased exponent
-        int exp = ((int) (bits >>> 52)) - EXPONENT_OFFSET;
-
-        // No case to distinguish nan/inf
-        // Handle sub-normal numbers
-        if (exp == Double.MIN_EXPONENT - 1) {
-            // Special case for zero, return as nan/inf to indicate scaling is not possible
-            if (bits == 0) {
-                return Double.MAX_EXPONENT + 1;
-            }
-            // A sub-normal number has an exponent below -1022. The amount below
-            // is defined by the number of shifts of the most significant bit in
-            // the mantissa that is required to get a 1 at position 53 (i.e. as
-            // if it were a normal number with assumed leading bit)
-            final long mantissa = bits & MANTISSA_MASK;
-            exp -= Long.numberOfLeadingZeros(mantissa << 12);
-        }
-        return exp;
     }
 
     /**
@@ -946,28 +580,8 @@ public final class ComplexFunctions {
         return d == Double.POSITIVE_INFINITY;
     }
 
-    /**
-     * Returns the inverse sine of the complex number.
-     *
-     * <p>This function exists to allow implementation of the identity
-     * {@code asinh(z) = -i asin(iz)}.
-     *
-     * <p>Adapted from {@code <boost/math/complex/asin.hpp>}. This method only (and not
-     * invoked methods within) is distributed under the Boost Software License V1.0.
-     * The original notice is shown below and the licence is shown in full in LICENSE:
-     * <pre>
-     * (C) Copyright John Maddock 2005.
-     * Distributed under the Boost Software License, Version 1.0. (See accompanying
-     * file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt)
-     * </pre>
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @param result Complex Result.
-     * @param <R> Generic
-     * @return The inverse sine of this complex number.
-     */
-    public static <R> R asin(final double real, final double imaginary, ComplexResult<R> result) {
+    public static DComplex asin(final double real, final double imaginary,
+                                DComplexConstructor<DComplex> result) {
         // Compute with positive values and determine sign at the end
         final double x = Math.abs(real);
         final double y = Math.abs(imaginary);
@@ -982,7 +596,7 @@ public final class ComplexFunctions {
                 im = y;
             } else {
                 // No-use of the input constructor
-                return result.apply(Double.NaN, Double.NaN);
+                return NAN;
             }
         } else if (Double.isNaN(y)) {
             if (x == 0) {
@@ -993,7 +607,7 @@ public final class ComplexFunctions {
                 im = x;
             } else {
                 // No-use of the input constructor
-                return result.apply(Double.NaN, Double.NaN);
+                return NAN;
             }
         } else if (isPosInfinite(x)) {
             re = isPosInfinite(y) ? PI_OVER_4 : PI_OVER_2;
@@ -1022,18 +636,18 @@ public final class ComplexFunctions {
                 } else {
                     final double apx = a + x;
                     if (x <= 1) {
-                        re = Math.atan(x / Math.sqrt(0.5 * apx * (yy / (real + xp1) + (s - xm1))));
+                        re = Math.atan(x / Math.sqrt(0.5 * apx * (yy / (r + xp1) + (s - xm1))));
                     } else {
-                        re = Math.atan(x / (y * Math.sqrt(0.5 * (apx / (real + xp1) + apx / (s + xm1)))));
+                        re = Math.atan(x / (y * Math.sqrt(0.5 * (apx / (r + xp1) + apx / (s + xm1)))));
                     }
                 }
 
                 if (a <= A_CROSSOVER) {
                     double am1;
                     if (x < 1) {
-                        am1 = 0.5 * (yy / (real + xp1) + yy / (s - xm1));
+                        am1 = 0.5 * (yy / (r + xp1) + yy / (s - xm1));
                     } else {
-                        am1 = 0.5 * (yy / (real + xp1) + (s + xm1));
+                        am1 = 0.5 * (yy / (r + xp1) + (s + xm1));
                     }
                     im = Math.log1p(am1 + Math.sqrt(am1 * (a + 1)));
                 } else {
@@ -1079,32 +693,16 @@ public final class ComplexFunctions {
                 }
             }
         }
+
         return result.apply(changeSign(re, real),
             changeSign(im, imaginary));
     }
+    public static DComplex asin(final DComplex c, DComplexConstructor<DComplex> result) {
+        return asin(c.getReal(), c.getImaginary(), result);
+    }
 
-    /**
-     * Returns the inverse cosine of the complex number.
-     *
-     * <p>This function exists to allow implementation of the identity
-     * {@code acosh(z) = +-i acos(z)}.
-     *
-     * <p>Adapted from {@code <boost/math/complex/acos.hpp>}. This method only (and not
-     * invoked methods within) is distributed under the Boost Software License V1.0.
-     * The original notice is shown below and the licence is shown in full in LICENSE:
-     * <pre>
-     * (C) Copyright John Maddock 2005.
-     * Distributed under the Boost Software License, Version 1.0. (See accompanying
-     * file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt)
-     * </pre>
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @param result Constructor.
-     * @return The inverse cosine of the complex number.
-     */
-    public static <R> R acos(final double real, final double imaginary,
-                                final ComplexResult<R> result) {
+    public static DComplex acos(final double real, final double imaginary,
+                                final DComplexConstructor<DComplex> result) {
         // Compute with positive values and determine sign at the end
         final double x = Math.abs(real);
         final double y = Math.abs(imaginary);
@@ -1129,7 +727,7 @@ public final class ComplexFunctions {
                 return result.apply(x, -imaginary);
             }
             // No-use of the input constructor
-            return (R) NAN;
+            return NAN;
         } else if (isPosInfinite(y)) {
             re = PI_OVER_2;
             im = y;
@@ -1218,7 +816,11 @@ public final class ComplexFunctions {
         return result.apply(negative(real) ? Math.PI - re : re,
             negative(imaginary) ? im : -im);
     }
-    public static <R> R acosh(double r, double i, ComplexResult<R> result) {
+    public static DComplex acos(final DComplex c,
+                                final DComplexConstructor<DComplex> result) {
+        return acos(c.getReal(), c.getImaginary(), result);
+    }
+    public static DComplex acosh(double r, double i, DComplexConstructor<DComplex> result) {
         // Define in terms of acos
         // acosh(z) = +-i acos(z)
         // Note the special case:
@@ -1238,141 +840,182 @@ public final class ComplexFunctions {
                 result.apply(im, -re)
         );
     }
-    public static <R> R conj(double r, double i, ComplexResult<R> result) {
-        return result.apply(r, -i);
+    public static DComplex acosh(DComplex c, DComplexConstructor<DComplex> result) {
+        return acosh(c.getReal(), c.getImaginary(), result);
     }
 
-    public static <R> R add(double r, double i, double a, ComplexResult<R> result) {
-        return result.apply(r + a, i);
-    }
-    public static <R> R addImaginary(double r, double i, double a, ComplexResult<R> result) {
-        return result.apply(r, i + a);
-    }
-    public static <R> R subtract(double r, double i, double s, ComplexResult<R> result) {
-        return result.apply(r - s, i);
-    }
-    public static <R> R subtractImaginary(double r, double i, double s, ComplexResult<R> result) {
-        return result.apply(r, i - s);
-    }
-    public static <R> R subtractFrom(double r, double i, double m, ComplexResult<R> result) {
-        return result.apply(m - r, -i);
-    }
-    public static <R> R subtractFromImaginary(double r, double i, double m, ComplexResult<R> result) {
-        return result.apply(-r, m - i);
-    }
-    public static <R> R multiply(double r, double i, double f, ComplexResult<R> result)
-    {
-        return result.apply(r * f, i * f);
-    }
-    public static <R> R multiplyImaginary(double r, double i, double f, ComplexResult<R> result) {
-        return result.apply(-i * f, r * f);
-    }
-    public static <R> R divide(double r, double i, double d, ComplexResult<R> result) {
-        return result.apply(r / d, i / d);
-    }
-    public static <R> R divideImaginary(double r, double i, double d, ComplexResult<R> result) {
-        return result.apply(i / d, -r / d);
-    }
-    /**
-     * Returns the logarithm of this complex number using the provided function.
-     * Implements the formula:
-     *
-     * <pre>
-     *   log(x + i y) = log(|x + i y|) + i arg(x + i y)</pre>
-     *
-     * <p>Warning: The argument {@code logOf2} must be equal to {@code log(2)} using the
-     * provided log function otherwise scaling using powers of 2 in the case of overflow
-     * will be incorrect. This is provided as an internal optimisation.
-     *
-     * @param log Log function.
-     * @param logOfeOver2 The log function applied to e, then divided by 2.
-     * @param logOf2 The log function applied to 2.
-     * @param result Constructor for the returned complex.
-     * @return The logarithm of this complex number.
-     * @see #abs(double, double)
-     * @see #arg(double, double)
-     */
-    private static <R> R log(double real, double imaginary, DoubleUnaryOperator log, double logOfeOver2, double logOf2, ComplexResult<R> result) {
-        // Handle NaN
-        if (Double.isNaN(real) || Double.isNaN(imaginary)) {
-            // Return NaN unless infinite
-            if (isInfinite(real, imaginary)) {
-                return result.apply(Double.POSITIVE_INFINITY, Double.NaN);
+    public static DComplex atanh(final double r, final double i,
+                                 final DComplexConstructor<DComplex> result) {
+        // Compute with positive values and determine sign at the end
+        double x = Math.abs(r);
+        double y = Math.abs(i);
+        // The result (without sign correction)
+        double re;
+        double im;
+        // Handle C99 special cases
+        if (Double.isNaN(x)) {
+            if (isPosInfinite(y)) {
+                // The sign of the real part of the result is unspecified
+                return result.apply(0, Math.copySign(PI_OVER_2, i));
+            }
+            // No-use of the input constructor.
+            // Optionally raises the ‘‘invalid’’ floating-point exception, for finite y.
+            return NAN;
+        } else if (Double.isNaN(y)) {
+            if (isPosInfinite(x)) {
+                return result.apply(Math.copySign(0, r), Double.NaN);
+            }
+            if (x == 0) {
+                return result.apply(r, Double.NaN);
             }
             // No-use of the input constructor
-            return (R) NAN;
-        }
-
-        // Returns the real part:
-        // log(sqrt(x^2 + y^2))
-        // log(x^2 + y^2) / 2
-
-        // Compute with positive values
-        double x = Math.abs(real);
-        double y = Math.abs(imaginary);
-
-        // Find the larger magnitude.
-        if (x < y) {
-            final double tmp = x;
-            x = y;
-            y = tmp;
-        }
-
-        if (x == 0) {
-            // Handle zero: raises the ‘‘divide-by-zero’’ floating-point exception.
-            return result.apply(Double.NEGATIVE_INFINITY,
-                negative(real) ? Math.copySign(Math.PI, imaginary) : imaginary);
-        }
-
-        double re;
-
-        // This alters the implementation of Hull et al (1994) which used a standard
-        // precision representation of |z|: sqrt(x*x + y*y).
-        // This formula should use the same definition of the magnitude returned
-        // by Complex.abs() which is a high precision computation with scaling.
-        // The checks for overflow thus only require ensuring the output of |z|
-        // will not overflow or underflow.
-
-        if (x > HALF && x < ROOT2) {
-            // x^2+y^2 close to 1. Use log1p(x^2+y^2 - 1) / 2.
-            re = Math.log1p(x2y2m1(x, y)) * logOfeOver2;
+            return NAN;
         } else {
-            // Check for over/underflow in |z|
-            // When scaling:
-            // log(a / b) = log(a) - log(b)
-            // So initialize the result with the log of the scale factor.
-            re = 0;
-            if (x > Double.MAX_VALUE / 2) {
-                // Potential overflow.
-                if (isPosInfinite(x)) {
-                    // Handle infinity
-                    return result.apply(x, arg(real, imaginary));
+            // x && y are finite or infinite. Check the safe region.
+            // The lower and upper bounds have been copied from boost::math::atanh.
+            // They are different from the safe region for asin and acos.
+            // x >= SAFE_UPPER: (1-x) == -x
+            // x <= SAFE_LOWER: 1 - x^2 = 1
+            if (inRegion(x, y, SAFE_LOWER, SAFE_UPPER)) {
+                // Normal computation within a safe region.
+                // minus x plus 1: (-x+1)
+                final double mxp1 = 1 - x;
+                final double yy = y * y;
+                // The definition of real component is:
+                // real = log( ((x+1)^2+y^2) / ((1-x)^2+y^2) ) / 4
+                // This simplifies by adding 1 and subtracting 1 as a fraction:
+                //      = log(1 + ((x+1)^2+y^2) / ((1-x)^2+y^2) - ((1-x)^2+y^2)/((1-x)^2+y^2) ) / 4
+                // real(atanh(z)) == log(1 + 4*x / ((1-x)^2+y^2)) / 4
+                // imag(atanh(z)) == tan^-1 (2y, (1-x)(1+x) - y^2) / 2
+                // imag(atanh(z)) == tan^-1 (2y, (1 - x^2 - y^2) / 2
+                // The division is done at the end of the function.
+                re = Math.log1p(4 * x / (mxp1 * mxp1 + yy));
+                // Modified from boost which does not switch the magnitude of x and y.
+                // The denominator for atan2 is 1 - x^2 - y^2. This can be made more precise if |x| > |y|.
+                final double numerator = 2 * y;
+                double denominator;
+                if (x < y) {
+                    final double tmp = x;
+                    x = y;
+                    y = tmp;
                 }
-                // Scale down.
-                x /= 2;
-                y /= 2;
-                // log(2)
-                re = logOf2;
-            } else if (y < Double.MIN_NORMAL) {
-                // Potential underflow.
-                if (y == 0) {
-                    // Handle real only number
-                    return result.apply(log.applyAsDouble(x), arg(real, imaginary));
+                // 1 - x is precise if |x| >= 1
+                if (x >= 1) {
+                    denominator = (1 - x) * (1 + x) - y * y;
+                } else {
+                    // |x| < 1: Use high precision if possible: 1 - x^2 - y^2 = -(x^2 + y^2 - 1)
+                    // Modified from boost to use the custom high precision method.
+                    denominator = -x2y2m1(x, y);
                 }
-                // Scale up sub-normal numbers to make them normal by scaling by 2^54,
-                // i.e. more than the mantissa digits.
-                x *= 0x1.0p54;
-                y *= 0x1.0p54;
-                // log(2^-54) = -54 * log(2)
-                re = -54 * logOf2;
+                im = Math.atan2(numerator, denominator);
+            } else {
+                // This section handles exception cases that would normally cause
+                // underflow or overflow in the main formulas.
+                // C99. G.7: Special case for imaginary only numbers
+                if (x == 0) {
+                    if (i == 0) {
+                        return result.apply(r, i);
+                    }
+                    // atanh(iy) = i atan(y)
+                    return result.apply(r, Math.atan(i));
+                }
+                // Real part:
+                // real = Math.log1p(4x / ((1-x)^2 + y^2))
+                // real = Math.log1p(4x / (1 - 2x + x^2 + y^2))
+                // real = Math.log1p(4x / (1 + x(x-2) + y^2))
+                // without either overflow or underflow in the squared terms.
+                if (x >= SAFE_UPPER) {
+                    // (1-x) = -x to machine precision:
+                    // log1p(4x / (x^2 + y^2))
+                    if (isPosInfinite(x) || isPosInfinite(y)) {
+                        re = 0;
+                    } else if (y >= SAFE_UPPER) {
+                        // Big x and y: divide by x*y
+                        re = Math.log1p((4 / y) / (x / y + y / x));
+                    } else if (y > 1) {
+                        // Big x: divide through by x:
+                        re = Math.log1p(4 / (x + y * y / x));
+                    } else {
+                        // Big x small y, as above but neglect y^2/x:
+                        re = Math.log1p(4 / x);
+                    }
+                } else if (y >= SAFE_UPPER) {
+                    if (x > 1) {
+                        // Big y, medium x, divide through by y:
+                        final double mxp1 = 1 - x;
+                        re = Math.log1p((4 * x / y) / (mxp1 * mxp1 / y + y));
+                    } else {
+                        // Big y, small x, as above but neglect (1-x)^2/y:
+                        // Note: log1p(v) == v - v^2/2 + v^3/3 ... Taylor series when v is small.
+                        // Here v is so small only the first term matters.
+                        re = 4 * x / y / y;
+                    }
+                } else if (x == 1) {
+                    // x = 1, small y: Special case when x == 1 as (1-x) is invalid.
+                    // Simplify the following formula:
+                    // real = log( sqrt((x+1)^2+y^2) ) / 2 - log( sqrt((1-x)^2+y^2) ) / 2
+                    //      = log( sqrt(4+y^2) ) / 2 - log(y) / 2
+                    // if: 4+y^2 -> 4
+                    //      = log( 2 ) / 2 - log(y) / 2
+                    //      = (log(2) - log(y)) / 2
+                    // Multiply by 2 as it will be divided by 4 at the end.
+                    // C99: if y=0 raises the ‘‘divide-by-zero’’ floating-point exception.
+                    re = 2 * (LN_2 - Math.log(y));
+                } else {
+                    // Modified from boost which checks y > SAFE_LOWER.
+                    // if y*y -> 0 it will be ignored so always include it.
+                    final double mxp1 = 1 - x;
+                    re = Math.log1p((4 * x) / (mxp1 * mxp1 + y * y));
+                }
+                // Imaginary part:
+                // imag = atan2(2y, (1-x)(1+x) - y^2)
+                // if x or y are large, then the formula: atan2(2y, (1-x)(1+x) - y^2)
+                // evaluates to +(PI - theta) where theta is negligible compared to PI.
+                if ((x >= SAFE_UPPER) || (y >= SAFE_UPPER)) {
+                    im = Math.PI;
+                } else if (x <= SAFE_LOWER) {
+                    // (1-x)^2 -> 1
+                    if (y <= SAFE_LOWER) {
+                        // 1 - y^2 -> 1
+                        im = Math.atan2(2 * y, 1);
+                    } else {
+                        im = Math.atan2(2 * y, 1 - y * y);
+                    }
+                } else {
+                    // Medium x, small y.
+                    // Modified from boost which checks (y == 0) && (x == 1) and sets re = 0.
+                    // This is same as the result from calling atan2(0, 0) so exclude this case.
+                    // 1 - y^2 = 1 so ignore subtracting y^2
+                    im = Math.atan2(2 * y, (1 - x) * (1 + x));
+                }
             }
-            re += log.applyAsDouble(abs(x, y));
         }
-
-        // All ISO C99 edge cases for the imaginary are satisfied by the Math library.
-        return result.apply(re, arg(real, imaginary));
+        re /= 4;
+        im /= 2;
+        return result.apply(changeSign(re, r),
+            changeSign(im, i));
     }
-    public static <R> R sqrt(double real, double imaginary, ComplexResult<R> result) {
+    public static DComplex atanh(final DComplex c,
+                                 final DComplexConstructor<DComplex> result) {
+        return atanh(c.getReal(), c.getImaginary(), result);
+    }
+    public static DComplex conj(double r, double i, DComplexConstructor<DComplex> result) {
+        return result.apply(r, -i);
+    }
+    public static DComplex conjComplex(DComplex c, DComplexConstructor<DComplex> result) {
+        return conj(c.getReal(), c.getImaginary(), result);
+    }
+
+
+    /**
+     * Returns the square root of the complex number {@code sqrt(x + i y)}.
+     *
+     * @param real Real component.
+     * @param imaginary Imaginary component.
+     * @param result ComplexConstructor
+     * @return The square root of the complex number.
+     */
+    public static DComplex sqrt(double real, double imaginary, DComplexConstructor<DComplex> result) {
         // Handle NaN
         if (Double.isNaN(real) || Double.isNaN(imaginary)) {
             // Check for infinite
@@ -1464,32 +1107,11 @@ public final class ComplexFunctions {
         }
         return result.apply(y / t, Math.copySign(t / 2, imaginary));
     }
-
-    /*
-    public static <R> R pow(double r1, double i1, double r2, double i2, ComplexResult<R> result) {
-        if (r1 == 0 &&
-            i1 == 0) {
-            // This value is zero. Test the other.
-            if (r2 > 0 &&
-                i2 == 0) {
-                // 0 raised to positive number is 0
-                return result.apply(0, 0);
-            }
-            // 0 raised to anything else is NaN
-            return result.apply(Double.NaN, Double.NaN);
-        }
-        return log().multiply().exp();
-    }
-    */
-
-
-
-    public static <R> R subtract(double re1, double im1, double re2, double im2, ComplexResult<R> result) {
-        return result.apply(re1 - re2,
-            im1 - im2);
+    public static DComplex sqrt(DComplex c, DComplexConstructor<DComplex> result) {
+        return sqrt(c.getReal(), c.getImaginary(), result);
     }
 
-    public static <R> R sinh(double real, double imaginary, ComplexResult<R> result) {
+    public static DComplex sinh(double real, double imaginary, DComplexConstructor<DComplex> result) {
         if (Double.isInfinite(real) && !Double.isFinite(imaginary)) {
             return result.apply(real, Double.NaN);
         }
@@ -1519,18 +1141,21 @@ public final class ComplexFunctions {
         return result.apply(Math.sinh(real) * Math.cos(imaginary),
             Math.cosh(real) * Math.sin(imaginary));
     }
-    /**
-     * Returns the hyperbolic cosine of the complex number.
-     *
-     * <p>This function exists to allow implementation of the identity
-     * {@code cos(z) = cosh(iz)}.<p>
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @param result Constructor.
-     * @return The hyperbolic cosine of the complex number.
-     */
-    private static <R> R cosh(double real, double imaginary, ComplexResult<R> result) {
+    public static DComplex sinh(DComplex c, DComplexConstructor<DComplex> result) {
+        return sinh(c.getReal(), c.getImaginary(), result);
+    }
+        /**
+         * Returns the hyperbolic cosine of the complex number.
+         *
+         * <p>This function exists to allow implementation of the identity
+         * {@code cos(z) = cosh(iz)}.<p>
+         *
+         * @param real Real part.
+         * @param imaginary Imaginary part.
+         * @param result Constructor.
+         * @return The hyperbolic cosine of the complex number.
+         */
+    public static DComplex cosh(double real, double imaginary, DComplexConstructor<DComplex> result) {
         // ISO C99: Preserve the even function by mapping to positive
         // f(z) = f(-z)
         if (Double.isInfinite(real) && !Double.isFinite(imaginary)) {
@@ -1566,7 +1191,9 @@ public final class ComplexFunctions {
         return result.apply(Math.cosh(real) * Math.cos(imaginary),
             Math.sinh(real) * Math.sin(imaginary));
     }
-
+    public static DComplex cosh(DComplex c, DComplexConstructor<DComplex> result) {
+        return cosh(c.getReal(), c.getImaginary(), result);
+    }
     /**
      * Compute cosh or sinh when the absolute real component |x| is large. In this case
      * cosh(x) and sinh(x) can be approximated by exp(|x|) / 2:
@@ -1585,8 +1212,8 @@ public final class ComplexFunctions {
      * @param result Constructor.
      * @return The hyperbolic sine/cosine of the complex number.
      */
-    private static <R> R coshsinh(double x, double real, double imaginary, boolean sinh,
-                                    ComplexResult<R> result) {
+    private static DComplex coshsinh(double x, double real, double imaginary, boolean sinh,
+                                     DComplexConstructor<DComplex> result) {
         // Always require the cos and sin.
         double re = Math.cos(imaginary);
         double im = Math.sin(imaginary);
@@ -1625,6 +1252,115 @@ public final class ComplexFunctions {
             im *= exp;
         }
         return result.apply(re, im);
+    }
+
+    public static DComplex tanh(double real, double imaginary, DComplexConstructor<DComplex> result) {
+        // Cache the absolute real value
+        final double x = Math.abs(real);
+
+        // Handle inf or nan.
+        if (!isPosFinite(x) || !Double.isFinite(imaginary)) {
+            if (isPosInfinite(x)) {
+                if (Double.isFinite(imaginary)) {
+                    // The sign is copied from sin(2y)
+                    // The identity sin(2a) = 2 sin(a) cos(a) is used for consistency
+                    // with the computation below. Only the magnitude is important
+                    // so drop the 2. When |y| is small sign(sin(2y)) = sign(y).
+                    final double sign = Math.abs(imaginary) < PI_OVER_2 ?
+                        imaginary :
+                        Math.sin(imaginary) * Math.cos(imaginary);
+                    return result.apply(Math.copySign(1, real),
+                        Math.copySign(0, sign));
+                }
+                // imaginary is infinite or NaN
+                return result.apply(Math.copySign(1, real), Math.copySign(0, imaginary));
+            }
+            // Remaining cases:
+            // (0 + i inf), returns (0 + i NaN)
+            // (0 + i NaN), returns (0 + i NaN)
+            // (x + i inf), returns (NaN + i NaN) for non-zero x (including infinite)
+            // (x + i NaN), returns (NaN + i NaN) for non-zero x (including infinite)
+            // (NaN + i 0), returns (NaN + i 0)
+            // (NaN + i y), returns (NaN + i NaN) for non-zero y (including infinite)
+            // (NaN + i NaN), returns (NaN + i NaN)
+            return result.apply(real == 0 ? real : Double.NaN,
+                imaginary == 0 ? imaginary : Double.NaN);
+        }
+
+        // Finite components
+        // tanh(x+iy) = (sinh(2x) + i sin(2y)) / (cosh(2x) + cos(2y))
+
+        if (real == 0) {
+            // Imaginary-only tanh(iy) = i tan(y)
+            // Identity: sin 2y / (1 + cos 2y) = tan(y)
+            return result.apply(real, Math.tan(imaginary));
+        }
+        if (imaginary == 0) {
+            // Identity: sinh 2x / (1 + cosh 2x) = tanh(x)
+            return result.apply(Math.tanh(real), imaginary);
+        }
+
+        // The double angles can be avoided using the identities:
+        // sinh(2x) = 2 sinh(x) cosh(x)
+        // sin(2y) = 2 sin(y) cos(y)
+        // cosh(2x) = 2 sinh^2(x) + 1
+        // cos(2y) = 2 cos^2(y) - 1
+        // tanh(x+iy) = (sinh(x)cosh(x) + i sin(y)cos(y)) / (sinh^2(x) + cos^2(y))
+        // To avoid a junction when swapping between the double angles and the identities
+        // the identities are used in all cases.
+
+        if (x > SAFE_EXP / 2) {
+            // Potential overflow in sinh/cosh(2x).
+            // Approximate sinh/cosh using exp^x.
+            // Ignore cos^2(y) in the divisor as it is insignificant.
+            // real = sinh(x)cosh(x) / sinh^2(x) = +/-1
+            final double re = Math.copySign(1, real);
+            // imag = sin(2y) / 2 sinh^2(x)
+            // sinh(x) -> sign(x) * e^|x| / 2 when x is large.
+            // sinh^2(x) -> e^2|x| / 4 when x is large.
+            // imag = sin(2y) / 2 (e^2|x| / 4) = 2 sin(2y) / e^2|x|
+            //      = 4 * sin(y) cos(y) / e^2|x|
+            // Underflow safe divide as e^2|x| may overflow:
+            // imag = 4 * sin(y) cos(y) / e^m / e^(2|x| - m)
+            // (|im| is a maximum of 2)
+            double im = Math.sin(imaginary) * Math.cos(imaginary);
+            if (x > SAFE_EXP) {
+                // e^2|x| > e^m * e^m
+                // This will underflow 2.0 / e^m / e^m
+                im = Math.copySign(0.0, im);
+            } else {
+                // e^2|x| = e^m * e^(2|x| - m)
+                im = 4 * im / EXP_M / Math.exp(2 * x - SAFE_EXP);
+            }
+            return result.apply(re, im);
+        }
+
+        // No overflow of sinh(2x) and cosh(2x)
+
+        // Note: This does not use the definitional formula but uses the identity:
+        // tanh(x+iy) = (sinh(x)cosh(x) + i sin(y)cos(y)) / (sinh^2(x) + cos^2(y))
+
+        final double sinhx = Math.sinh(real);
+        final double coshx = Math.cosh(real);
+        final double siny = Math.sin(imaginary);
+        final double cosy = Math.cos(imaginary);
+        final double divisor = sinhx * sinhx + cosy * cosy;
+        return result.apply(sinhx * coshx / divisor,
+            siny * cosy / divisor);
+    }
+    public static DComplex tanh(DComplex c, DComplexConstructor<DComplex> result) {
+        return tanh(c.getReal(), c.getImaginary(), result);
+    }
+        /**
+         * Check that an absolute value is finite. Used to replace {@link Double#isFinite(double)}
+         * when the input value is known to be positive (i.e. in the case where it has been
+         * set using {@link Math#abs(double)}).
+         *
+         * @param d Value.
+         * @return {@code true} if {@code d} is +finite.
+         */
+    private static boolean isPosFinite(double d) {
+        return d <= Double.MAX_VALUE;
     }
     /**
      * Compute {@code x^2 + y^2 - 1} in high precision.
@@ -1791,16 +1527,13 @@ public final class ComplexFunctions {
         // Let e and f be non-overlapping expansions of components of length m and n.
         // The following algorithm will produce a non-overlapping expansion h where the
         // sum h_i = e + f and components of h are in increasing order of magnitude.
-
         // Expansion-sum proceeds by a grow-expansion of the first part from one expansion
         // into the other, extending its length by 1. The process repeats for the next part
         // but the grow-expansion starts at the previous merge position + 1.
         // Thus expansion-sum requires mn two-sum operations to merge length m into length n
         // resulting in length m+n-1.
-
         // Variables numbered from 1 as per Figure 7 (p.12). The output expansion h is placed
         // into e increasing its length for each grow expansion.
-
         // We have two expansions for x^2 and y^2 and the whole number -1.
         // Expecting (x^2 + y^2) close to 1 we generate first the intermediate expansion
         // (x^2 - 1) moving the result away from 1 where there are sparse floating point
@@ -1819,7 +1552,6 @@ public final class ComplexFunctions {
         // distillation two-sum pass over the final expansion as a cost of 1 fast-two-sum and
         // 3 two-sum operations! So we use the expansion sum with the same operations and
         // no branches.
-
         // q=running sum
         double q = x2Low - 1;
         double e1 = fastSumLow(-1, x2Low, q);
@@ -1855,4 +1587,166 @@ public final class ComplexFunctions {
         // cis numbers.
         return e1 + e2 + e3 + e4 + e5;
     }
+
+    /**
+     * Returns the logarithm of this complex number using the provided function.
+     * Implements the formula:
+     *
+     * <pre>
+     *   log(x + i y) = log(|x + i y|) + i arg(x + i y)</pre>
+     *
+     * <p>Warning: The argument {@code logOf2} must be equal to {@code log(2)} using the
+     * provided log function otherwise scaling using powers of 2 in the case of overflow
+     * will be incorrect. This is provided as an internal optimisation.
+     *
+     * @param c input complex number
+     * @param constructor Constructor for the returned complex.
+     * @return The logarithm of this complex number.
+     */
+    public static DComplex log(DComplex c, DComplexConstructor constructor) {
+        return log(c.getReal(), c.getImaginary(), constructor);
+    }
+
+    /**
+     * Returns the logarithm of this complex number using the provided function.
+     * Implements the formula:
+     *
+     * <pre>
+     *   log(x + i y) = log(|x + i y|) + i arg(x + i y)</pre>
+     *
+     * <p>Warning: The argument {@code logOf2} must be equal to {@code log(2)} using the
+     * provided log function otherwise scaling using powers of 2 in the case of overflow
+     * will be incorrect. This is provided as an internal optimisation.
+     *
+     * @param real real part of input complex number
+     * @param imaginary imaginary part of input complex number
+     * @param constructor Constructor for the returned complex.
+     * @return The logarithm of this complex number.
+     */
+    private static DComplex log(double real, double imaginary, DComplexConstructor<DComplex> constructor) {
+        return log(Math::log, HALF, LN_2, real, imaginary, constructor);
+    }
+
+    /**
+     * Returns the logarithm of this complex number using the provided function.
+     * Implements the formula:
+     *
+     * <pre>
+     *   log10(x + i y) = log10(|x + i y|) + i arg(x + i y)</pre>
+     *
+     * <p>Warning: The argument {@code logOf2} must be equal to {@code log(2)} using the
+     * provided log function otherwise scaling using powers of 2 in the case of overflow
+     * will be incorrect. This is provided as an internal optimisation.
+     *
+     * @param c input complex number
+     * @param constructor Constructor for the returned complex.
+     * @return The logarithm of this complex number.
+     */
+    public static DComplex log10(DComplex c, DComplexConstructor constructor) {
+        return log10(c.getReal(), c.getImaginary(), constructor);
+    }
+
+    /**
+     * Returns the logarithm of this complex number using the provided function.
+     * Implements the formula:
+     *
+     * <pre>
+     *   log10(x + i y) = log10(|x + i y|) + i arg(x + i y)</pre>
+     *
+     * <p>Warning: The argument {@code logOf2} must be equal to {@code log(2)} using the
+     * provided log function otherwise scaling using powers of 2 in the case of overflow
+     * will be incorrect. This is provided as an internal optimisation.
+     *
+     * @param real real part of input complex number
+     * @param imaginary imaginary part of input complex number
+     * @param constructor Constructor for the returned complex.
+     * @return The logarithm of this complex number.
+     */
+    private static DComplex log10(double real, double imaginary, DComplexConstructor<DComplex> constructor) {
+        return log(Math::log10, LOG_10E_O_2, LOG10_2, real, imaginary, constructor);
+    }
+
+
+    static DComplex log(DoubleUnaryOperator log, double logOfeOver2, double logOf2,
+                                double real, double imaginary, DComplexConstructor<DComplex> constructor) {
+        // Handle NaN
+        if (Double.isNaN(real) || Double.isNaN(imaginary)) {
+            // Return NaN unless infinite
+            if (isInfinite(real, imaginary)) {
+                return constructor.apply(Double.POSITIVE_INFINITY, Double.NaN);
+            }
+            // No-use of the input constructor
+            return NAN;
+        }
+
+        // Returns the real part:
+        // log(sqrt(x^2 + y^2))
+        // log(x^2 + y^2) / 2
+
+        // Compute with positive values
+        double x = Math.abs(real);
+        double y = Math.abs(imaginary);
+
+        // Find the larger magnitude.
+        if (x < y) {
+            final double tmp = x;
+            x = y;
+            y = tmp;
+        }
+
+        if (x == 0) {
+            // Handle zero: raises the ‘‘divide-by-zero’’ floating-point exception.
+            return constructor.apply(Double.NEGATIVE_INFINITY,
+                negative(real) ? Math.copySign(Math.PI, imaginary) : imaginary);
+        }
+
+        double re;
+
+        // This alters the implementation of Hull et al (1994) which used a standard
+        // precision representation of |z|: sqrt(x*x + y*y).
+        // This formula should use the same definition of the magnitude returned
+        // by Complex.abs() which is a high precision computation with scaling.
+        // The checks for overflow thus only require ensuring the output of |z|
+        // will not overflow or underflow.
+
+        if (x > HALF && x < ROOT2) {
+            // x^2+y^2 close to 1. Use log1p(x^2+y^2 - 1) / 2.
+            re = Math.log1p(x2y2m1(x, y)) * logOfeOver2;
+        } else {
+            // Check for over/underflow in |z|
+            // When scaling:
+            // log(a / b) = log(a) - log(b)
+            // So initialize the result with the log of the scale factor.
+            re = 0;
+            if (x > Double.MAX_VALUE / 2) {
+                // Potential overflow.
+                if (isPosInfinite(x)) {
+                    // Handle infinity
+                    return constructor.apply(x, arg(real, imaginary));
+                }
+                // Scale down.
+                x /= 2;
+                y /= 2;
+                // log(2)
+                re = logOf2;
+            } else if (y < Double.MIN_NORMAL) {
+                // Potential underflow.
+                if (y == 0) {
+                    // Handle real only number
+                    return constructor.apply(log.applyAsDouble(x), arg(real, imaginary));
+                }
+                // Scale up sub-normal numbers to make them normal by scaling by 2^54,
+                // i.e. more than the mantissa digits.
+                x *= 0x1.0p54;
+                y *= 0x1.0p54;
+                // log(2^-54) = -54 * log(2)
+                re = -54 * logOf2;
+            }
+            re += log.applyAsDouble(abs(x, y));
+        }
+
+        // All ISO C99 edge cases for the imaginary are satisfied by the Math library.
+        return constructor.apply(re, arg(real, imaginary));
+    }
+
 }

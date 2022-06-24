@@ -18,19 +18,15 @@
 package org.apache.commons.numbers.complex;
 
 @FunctionalInterface
-public interface ComplexFunction<R> {
+public  interface DComplexConstructor<R> {
 
-    default R apply(Complex c, ComplexResult<R> result) {
-        return apply(c.real(), c.imag(), result);
-    }
-    R apply(double r, double i, ComplexResult<R> result);
+    /**
+     * A complex number result representation.
+     */
+    DComplexConstructor<DComplex> D_COMPLEX_RESULT = DComplex::of;
 
-    default <U> ComplexFunction<U> thenApply(ComplexFunction<U> afterFunction) {
-        return (x, y, afterResult) -> {
-            ComplexResultInterceptor<R> interceptor = ComplexResultInterceptor.TLOCAL_ResultInterceptor.get();
-            interceptor.pushResultProvider(afterFunction, afterResult);
-            apply(x, y, interceptor);
-            return interceptor.popResult();
-        };
-    }
+    R apply(double r, double i);
+
+
 }
+

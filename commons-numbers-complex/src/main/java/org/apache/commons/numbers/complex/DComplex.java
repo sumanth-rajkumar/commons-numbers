@@ -17,22 +17,12 @@
 
 package org.apache.commons.numbers.complex;
 
-import java.util.Objects;
-import java.util.function.Function;
+public interface DComplex {
 
-@FunctionalInterface
-public  interface ComplexResult<R> {
+    double getReal();
+    double getImaginary();
 
-    R apply(double r, double i);
-
-    default <V> ComplexResult<V> andThen(Function<? super R, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (r, i) -> after.apply(apply(r, i));
-    }
-
-    default ComplexResult<R> compose(ComplexFunction<R> before) {
-        Objects.requireNonNull(before);
-        return (r, i) -> before.apply(r, i, this::apply);
+    static DComplex of(double r, double i) {
+        return Complex.ofCartesian(r, i);
     }
 }
-

@@ -19,11 +19,8 @@ package org.apache.commons.numbers.complex;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.function.DoubleBinaryOperator;
-import java.util.function.DoubleUnaryOperator;
 
 /**
  * Cartesian representation of a complex number. The complex number is expressed
@@ -64,16 +61,13 @@ import java.util.function.DoubleUnaryOperator;
  * @see <a href="http://www.open-std.org/JTC1/SC22/WG14/www/standards">
  *    ISO/IEC 9899 - Programming languages - C</a>
  */
-public final class Complex implements Serializable, ComplexDoubleArray, ComplexDouble {
+public final class Complex implements Serializable, DComplex {
     /**
      * A complex number representing \( i \), the square root of \( -1 \).
      *
      * <p>\( (0 + i 1) \).
      */
     public static final Complex I = new Complex(0, 1);
-
-    /** TODO. */
-    public static final ComplexResult<Complex> CARTESIAN_RESULT = Complex::ofCartesian;
 
     /**
      * A complex number representing one.
@@ -90,127 +84,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
 
     /** A complex number representing {@code NaN + i NaN}. */
     public static final Complex NAN = new Complex(Double.NaN, Double.NaN);
-    /** &pi;/2. */
-    private static final double PI_OVER_2 = 0.5 * Math.PI;
-    /** &pi;/4. */
-    private static final double PI_OVER_4 = 0.25 * Math.PI;
-    /** Natural logarithm of 2 (ln(2)). */
-    private static final double LN_2 = Math.log(2);
-    /** Base 10 logarithm of 10 divided by 2 (log10(e)/2). */
-    private static final double LOG_10E_O_2 = Math.log10(Math.E) / 2;
-    /** Base 10 logarithm of 2 (log10(2)). */
-    private static final double LOG10_2 = Math.log10(2);
-    /** {@code 1/2}. */
-    private static final double HALF = 0.5;
-    /** {@code sqrt(2)}. */
-    private static final double ROOT2 = 1.4142135623730951;
-    /** {@code 1.0 / sqrt(2)}.
-     * This is pre-computed to the closest double from the exact result.
-     * It is 1 ULP different from 1.0 / Math.sqrt(2) but equal to Math.sqrt(2) / 2.
-     */
-    private static final double ONE_OVER_ROOT2 = 0.7071067811865476;
-    /** The bit representation of {@code -0.0}. */
-    private static final long NEGATIVE_ZERO_LONG_BITS = Double.doubleToLongBits(-0.0);
-    /** Exponent offset in IEEE754 representation. */
-    private static final int EXPONENT_OFFSET = 1023;
-    /**
-     * Largest double-precision floating-point number such that
-     * {@code 1 + EPSILON} is numerically equal to 1. This value is an upper
-     * bound on the relative error due to rounding real numbers to double
-     * precision floating-point numbers.
-     *
-     * <p>In IEEE 754 arithmetic, this is 2<sup>-53</sup>.
-     * Copied from o.a.c.numbers.Precision.
-     *
-     * @see <a href="http://en.wikipedia.org/wiki/Machine_epsilon">Machine epsilon</a>
-     */
-    private static final double EPSILON = Double.longBitsToDouble((EXPONENT_OFFSET - 53L) << 52);
-    /** Mask to remove the sign bit from a long. */
-    private static final long UNSIGN_MASK = 0x7fff_ffff_ffff_ffffL;
-    /** Mask to extract the 52-bit mantissa from a long representation of a double. */
-    private static final long MANTISSA_MASK = 0x000f_ffff_ffff_ffffL;
-    /** The multiplier used to split the double value into hi and low parts. This must be odd
-     * and a value of 2^s + 1 in the range {@code p/2 <= s <= p-1} where p is the number of
-     * bits of precision of the floating point number. Here {@code s = 27}.*/
-    private static final double MULTIPLIER = 1.34217729E8;
-
-    /**
-     * Crossover point to switch computation for asin/acos factor A.
-     * This has been updated from the 1.5 value used by Hull et al to 10
-     * as used in boost::math::complex.
-     * @see <a href="https://svn.boost.org/trac/boost/ticket/7290">Boost ticket 7290</a>
-     */
-    private static final double A_CROSSOVER = 10.0;
-    /** Crossover point to switch computation for asin/acos factor B. */
-    private static final double B_CROSSOVER = 0.6471;
-    /**
-     * The safe maximum double value {@code x} to avoid loss of precision in asin/acos.
-     * Equal to sqrt(M) / 8 in Hull, et al (1997) with M the largest normalised floating-point value.
-     */
-    private static final double SAFE_MAX = Math.sqrt(Double.MAX_VALUE) / 8;
-    /**
-     * The safe minimum double value {@code x} to avoid loss of precision/underflow in asin/acos.
-     * Equal to sqrt(u) * 4 in Hull, et al (1997) with u the smallest normalised floating-point value.
-     */
-    private static final double SAFE_MIN = Math.sqrt(Double.MIN_NORMAL) * 4;
-    /**
-     * The safe maximum double value {@code x} to avoid loss of precision in atanh.
-     * Equal to sqrt(M) / 2 with M the largest normalised floating-point value.
-     */
-    private static final double SAFE_UPPER = Math.sqrt(Double.MAX_VALUE) / 2;
-    /**
-     * The safe minimum double value {@code x} to avoid loss of precision/underflow in atanh.
-     * Equal to sqrt(u) * 2 with u the smallest normalised floating-point value.
-     */
-    private static final double SAFE_LOWER = Math.sqrt(Double.MIN_NORMAL) * 2;
-    /** The safe maximum double value {@code x} to avoid overflow in sqrt. */
-    private static final double SQRT_SAFE_UPPER = Double.MAX_VALUE / 8;
-    /**
-     * A safe maximum double value {@code m} where {@code e^m} is not infinite.
-     * This can be used when functions require approximations of sinh(x) or cosh(x)
-     * when x is large using exp(x):
-     * <pre>
-     * sinh(x) = (e^x - e^-x) / 2 = sign(x) * e^|x| / 2
-     * cosh(x) = (e^x + e^-x) / 2 = e^|x| / 2 </pre>
-     *
-     * <p>This value can be used to approximate e^x using a product:
-     *
-     * <pre>
-     * e^x = product_n (e^m) * e^(x-nm)
-     * n = (int) x/m
-     * e.g. e^2000 = e^m * e^m * e^(2000 - 2m) </pre>
-     *
-     * <p>The value should be below ln(max_value) ~ 709.783.
-     * The value m is set to an integer for less error when subtracting m and chosen as
-     * even (m=708) as it is used as a threshold in tanh with m/2.
-     *
-     * <p>The value is used to compute e^x multiplied by a small number avoiding
-     * overflow (sinh/cosh) or a small number divided by e^x without underflow due to
-     * infinite e^x (tanh). The following conditions are used:
-     * <pre>
-     * 0.5 * e^m * Double.MIN_VALUE * e^m * e^m = Infinity
-     * 2.0 / e^m / e^m = 0.0 </pre>
-     */
-    private static final double SAFE_EXP = 708;
-    /**
-     * The value of Math.exp(SAFE_EXP): e^708.
-     * To be used in overflow/underflow safe products of e^m to approximate e^x where x > m.
-     */
-    private static final double EXP_M = Math.exp(SAFE_EXP);
-
-    /** 54 shifted 20-bits to align with the exponent of the upper 32-bits of a double. */
-    private static final int EXP_54 = 0x36_00000;
-    /** Represents an exponent of 500 in unbiased form shifted 20-bits to align with the upper 32-bits of a double. */
-    private static final int EXP_500 = 0x5f3_00000;
-    /** Represents an exponent of 1024 in unbiased form (infinite or nan)
-     * shifted 20-bits to align with the upper 32-bits of a double. */
-    private static final int EXP_1024 = 0x7ff_00000;
-    /** Represents an exponent of -500 in unbiased form shifted 20-bits to align with the upper 32-bits of a double. */
-    private static final int EXP_NEG_500 = 0x20b_00000;
-    /** 2^600. */
-    private static final double TWO_POW_600 = 0x1.0p+600;
-    /** 2^-600. */
-    private static final double TWO_POW_NEG_600 = 0x1.0p-600;
 
     /** Serializable version identifier. */
     private static final long serialVersionUID = 20180201L;
@@ -241,23 +114,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     private final double real;
 
 
-
-    /**
-     * Define a constructor for a Complex.
-     * This is used in functions that implement trigonomic identities.
-     */
-    @FunctionalInterface
-    private interface ComplexConstructor {
-        /**
-         * Create a complex number given the real and imaginary parts.
-         *
-         * @param real Real part.
-         * @param imaginary Imaginary part.
-         * @return {@code Complex} object.
-         */
-        Complex create(double real, double imaginary);
-    }
-
     /**
      * Private default constructor.
      *
@@ -267,97 +123,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     private Complex(double real, double imaginary) {
         this.real = real;
         this.imaginary = imaginary;
-    }
-
-
-    @Override
-    public int size() {
-        return 1;
-    }
-
-    @Override
-    public void get(int index, int destIndex, int len, double[] realAndImgPairs) {
-        if (index != 0 || len != 1) {
-            throw new IndexOutOfBoundsException();
-        }
-        realAndImgPairs[destIndex] = real;
-        realAndImgPairs[destIndex + 1] = imaginary;
-
-    }
-
-    @Override
-    public ComplexDouble get(int index) {
-        if (index != 0) {
-            throw new IndexOutOfBoundsException();
-        }
-        return this;
-    }
-
-    /**
-     * To do.
-     * @param <T>
-     */
-    public static final class SingletonIterator<T> implements Iterable<T>, Iterator<T> {
-        /**
-         * To do.
-        */
-        private T element;
-
-        /**
-         * To do.
-        */
-        private boolean hasNext = true;
-
-        public SingletonIterator(T t) {
-            this.element = t;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return hasNext;
-        }
-
-        @Override
-        public T next() {
-            if (!hasNext) {
-                throw new NoSuchElementException();
-            }
-            hasNext = false;
-            return element;
-        }
-
-        @Override
-        public Iterator<T> iterator() {
-            return this;
-        }
-    }
-
-    @Override
-    public Iterator<ComplexDouble> iterator(int index, int length) {
-        if (index != 0 || length != 1) {
-            throw new IndexOutOfBoundsException();
-        }
-        return new SingletonIterator<>(this);
-    }
-
-    @Override
-    public ComplexDoubleArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
-        return Complex.ofCartesian(realAndImgPairs[sourceIndex], realAndImgPairs[sourceIndex + 1]);
-    }
-
-    @Override
-    public ComplexDoubleArray setValue(int index, ComplexDouble c) {
-        return Complex.ofCartesian(c.real(), c.imag());
-    }
-
-    @Override
-    public ComplexDoubleArray setValue(int index, double r, double i) {
-        return Complex.ofCartesian(r, i);
-    }
-
-    @Override
-    public void ensureCapacity(int capacity) {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -414,7 +179,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      */
     public static Complex ofPolar(double rho, double theta) {
         // Require finite theta and non-negative, non-nan rho
-        if (!Double.isFinite(theta) || negative(rho) || Double.isNaN(rho)) {
+        if (!Double.isFinite(theta) || ComplexFunctions.negative(rho) || Double.isNaN(rho)) {
             return NAN;
         }
         final double x = rho * Math.cos(theta);
@@ -545,7 +310,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      *
      * @return The real part.
      */
-    public double getReal() {
+    @Override
+    public double real() {
         return real;
     }
 
@@ -555,10 +321,10 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * <p>This method is the equivalent of the C++ method {@code std::complex::real}.
      *
      * @return The real part.
-     * @see #getReal()
+     * @see #real()
      */
-    public double real() {
-        return getReal();
+    public double getReal() {
+        return this.real;
     }
 
     /**
@@ -566,7 +332,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      *
      * @return The imaginary part.
      */
-    public double getImaginary() {
+    @Override
+    public double imag() {
         return imaginary;
     }
 
@@ -576,10 +343,10 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * <p>This method is the equivalent of the C++ method {@code std::complex::imag}.
      *
      * @return The imaginary part.
-     * @see #getImaginary()
+     * @see #imag()
      */
-    public double imag() {
-        return getImaginary();
+    public double getImaginary() {
+        return imaginary;
     }
 
     /**
@@ -613,10 +380,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://mathworld.wolfram.com/ComplexModulus.html">Complex modulus</a>
      */
     public double abs() {
-        return applyUnaryOperator(ComplexFunctions::abs);
+        return applyToDoubleFunction(ComplexFunctions::abs);
     }
-
-
 
     /**
      * Returns the argument of this complex number.
@@ -643,7 +408,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      */
     public double arg() {
         // Delegate
-        return applyUnaryOperator(ComplexFunctions::arg);
+        return Math.atan2(imaginary, real);
     }
 
     /**
@@ -669,7 +434,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://mathworld.wolfram.com/AbsoluteSquare.html">Absolute square</a>
      */
     public double norm() {
-        return applyUnaryOperator(ComplexFunctions::norm);
+        return applyToDoubleFunction(ComplexFunctions::norm);
     }
 
     /**
@@ -729,7 +494,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @return \( -z \).
      */
     public Complex negate() {
-        return this.applyUnaryOperator(ComplexFunctions::negate);
+        return new Complex(-real, -imaginary);
     }
 
     /**
@@ -748,7 +513,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * IEEE and ISO C standards: cproj</a>
      */
     public Complex proj() {
-        return this.applyUnaryOperator(ComplexFunctions::proj);
+        return applyUnaryOperator(ComplexFunctions::proj);
     }
 
     /**
@@ -762,7 +527,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://mathworld.wolfram.com/ComplexAddition.html">Complex Addition</a>
      */
     public Complex add(Complex addend) {
-        return this.applyBinaryOperator(addend, ComplexFunctions::add);
+        return new Complex(real + addend.real,
+            imaginary + addend.imaginary);
     }
 
     /**
@@ -786,7 +552,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #ofCartesian(double, double)
      */
     public Complex add(double addend) {
-        return applyBinaryOperator(addend, ComplexFunctions::add);
+        return new Complex(real + addend, imaginary);
     }
 
     /**
@@ -810,7 +576,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #ofCartesian(double, double)
      */
     public Complex addImaginary(double addend) {
-        return applyBinaryOperator(addend, ComplexFunctions::addImaginary);
+        return new Complex(real, imaginary + addend);
     }
 
     /**
@@ -824,7 +590,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://mathworld.wolfram.com/ComplexSubtraction.html">Complex Subtraction</a>
      */
     public Complex subtract(Complex subtrahend) {
-        return this.applyBinaryOperator(subtrahend, ComplexFunctions::subtract);
+        return new Complex(real - subtrahend.real,
+            imaginary - subtrahend.imaginary);
     }
 
     /**
@@ -842,7 +609,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #subtract(Complex)
      */
     public Complex subtract(double subtrahend) {
-        return applyBinaryOperator(subtrahend, ComplexFunctions::subtract);
+        return new Complex(real - subtrahend, imaginary);
     }
 
     /**
@@ -860,7 +627,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #subtract(Complex)
      */
     public Complex subtractImaginary(double subtrahend) {
-        return applyBinaryOperator(subtrahend, ComplexFunctions::subtractImaginary);
+        return new Complex(real, imaginary - subtrahend);
     }
 
     /**
@@ -883,7 +650,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #ofCartesian(double, double)
      */
     public Complex subtractFrom(double minuend) {
-        return applyBinaryOperator(minuend, ComplexFunctions::subtractFrom);
+        return new Complex(minuend - real, -imaginary);
     }
 
     /**
@@ -906,7 +673,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #ofCartesian(double, double)
      */
     public Complex subtractFromImaginary(double minuend) {
-        return applyBinaryOperator(minuend, ComplexFunctions::subtractFromImaginary);
+        return new Complex(-real, minuend - imaginary);
     }
 
     /**
@@ -922,13 +689,32 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://mathworld.wolfram.com/ComplexMultiplication.html">Complex Muliplication</a>
      */
     public Complex multiply(Complex factor) {
-        return applyBinaryOperator(factor, ComplexFunctions::multiply);
-        //return multiply(real, imaginary, factor.real, factor.imaginary);
+        return applyBinaryOperator(factor, ComplexBiFunctions::multiply);
     }
 
-
+    /**
+     * Returns a {@code Complex} whose value is {@code this * factor}, with {@code factor}
+     * interpreted as a real number.
+     * Implements the formula:
+     *
+     * <p>\[ (a + i b) c =  (ac) + i (bc) \]
+     *
+     * <p>This method is included for compatibility with ISO C99 which defines arithmetic between
+     * real-only and complex numbers.</p>
+     *
+     * <p>Note: This method should be preferred over using
+     * {@link #multiply(Complex) multiply(Complex.ofCartesian(factor, 0))}. Multiplication
+     * can generate signed zeros if either {@code this} complex has zeros for the real
+     * and/or imaginary component, or if the factor is zero. The summation of signed zeros
+     * in {@link #multiply(Complex)} may create zeros in the result that differ in sign
+     * from the equivalent call to multiply by a real-only number.
+     *
+     * @param  factor Value to be multiplied by this complex number.
+     * @return {@code this * factor}.
+     * @see #multiply(Complex)
+     */
     public Complex multiply(double factor) {
-        return applyBinaryOperator(factor, ComplexFunctions::multiply);
+        return new Complex(real * factor, imaginary * factor);
     }
 
     /**
@@ -961,7 +747,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #multiply(Complex)
      */
     public Complex multiplyImaginary(double factor) {
-        return applyBinaryOperator(factor, ComplexFunctions::multiplyImaginary);
+        return new Complex(-imaginary * factor, real * factor);
     }
 
     /**
@@ -977,10 +763,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://mathworld.wolfram.com/ComplexDivision.html">Complex Division</a>
      */
     public Complex divide(Complex divisor) {
-        return applyBinaryOperator(divisor, ComplexFunctions::divide);
+        return applyBinaryOperator(divisor, ComplexBiFunctions::divide);
     }
-
-
 
     /**
      * Returns a {@code Complex} whose value is {@code (this / divisor)},
@@ -1004,7 +788,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #divide(Complex)
      */
     public Complex divide(double divisor) {
-        return applyBinaryOperator(divisor, ComplexFunctions::divide);
+        return new Complex(real / divisor, imaginary / divisor);
     }
 
     /**
@@ -1038,7 +822,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #divide(double)
      */
     public Complex divideImaginary(double divisor) {
-        return applyBinaryOperator(divisor, ComplexFunctions::divideImaginary);
+        return new Complex(imaginary / divisor, -real / divisor);
     }
 
     /**
@@ -1091,32 +875,67 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @return The conjugate (\( \overline{z} \)) of this complex number.
      */
     public Complex conj() {
-        return this.applyUnaryOperator(ComplexFunctions::conj);
+        return new Complex(real, -imaginary);
     }
 
-
-    public Complex arrayConj() {
-        return apply(ComplexArrayFunctions::conj);
+    /**
+     * This operator is used for all Complex operations that only deal with one Complex number.
+     * @param operator DComplexUnaryOperator
+     * @return Complex
+     */
+    private Complex applyUnaryOperator(DComplexUnaryOperator operator) {
+        return (Complex) operator.apply(this, Complex::ofCartesian);
     }
 
-    public Complex applyUnaryOperator(ComplexFunction<Complex> operator) {
-        return operator.apply(this.real, this.imaginary, Complex::ofCartesian);
+    /**
+     * This operator is used for all Complex operations that deals with one Complex number
+     * and multiplies the Complex number by i and then -i.
+     * @param operator DComplexUnaryOperator
+     * @return Complex
+     */
+    private Complex multiplyIApplyAndThenMultiplyNegativeI(DComplexUnaryOperator operator) {
+        return (Complex) operator.apply(-this.imaginary, this.real, Complex::multiplyNegativeI);
     }
 
-    public double applyUnaryOperator(DoubleBinaryOperator operator) {
+    /**
+     * This operator is used for all Complex operations that deals with one Complex number
+     * and multiplies the Complex number by i.
+     * @param operator DComplexUnaryOperator
+     * @return Complex
+     */
+    private Complex multiplyIAndApply(DComplexUnaryOperator operator) {
+        return (Complex) operator.apply(-this.imaginary, this.real, Complex::ofCartesian);
+    }
+
+    /**
+     * This operator is used for all Complex operations that deals with one Complex number
+     * but returns a double.
+     * @param operator DoubleBinaryOperator
+     * @return double
+     */
+    private double applyToDoubleFunction(DoubleBinaryOperator operator) {
         return operator.applyAsDouble(this.real, this.imaginary);
     }
-    @Override
-    public Complex apply(ComplexDoubleUnaryOperator op) {
-        return (Complex)op.apply(this, this);
+
+    /**
+     * This operator is used for all Complex operations that deals with two Complex numbers.
+     * @param operator DComplexBinaryOperator
+     * @param input DComplex
+     * @return Complex
+     */
+    private Complex applyBinaryOperator(DComplex input, DComplexBinaryOperator operator) {
+        return (Complex) operator.apply(this, input, Complex::ofCartesian);
     }
 
-    public Complex applyBinaryOperator(Complex input, ComplexBiFunction operator) {
-        return operator.apply(this.real, this.imaginary, input.getReal(), input.getImaginary(), CARTESIAN_RESULT);
-    }
-
-    public Complex applyBinaryOperator(double factor, DoubleComplexBiFunction operator) {
-        return operator.apply(this.real, this.imaginary, factor, CARTESIAN_RESULT);
+    /**
+     * This operator is used for all Complex operations that deals with one Complex number
+     * and a scalar factor.
+     * @param operator DComplexScalarFunction
+     * @param factor double
+     * @return Complex
+     */
+    private Complex applyScalarFunction(double factor, DComplexScalarFunction operator) {
+        return (Complex) operator.apply(this, factor, Complex::ofCartesian);
     }
 
     /**
@@ -1165,7 +984,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Log/">Log</a>
      */
     public Complex log() {
-        return log(Math::log, HALF, LN_2, Complex::ofCartesian);
+        return applyUnaryOperator(ComplexFunctions::log);
     }
 
     /**
@@ -1190,353 +1009,9 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see #arg()
      */
     public Complex log10() {
-        return log(Math::log10, LOG_10E_O_2, LOG10_2, Complex::ofCartesian);
+        return applyUnaryOperator(ComplexFunctions::log10);
     }
 
-    /**
-     * Returns the logarithm of this complex number using the provided function.
-     * Implements the formula:
-     *
-     * <pre>
-     *   log(x + i y) = log(|x + i y|) + i arg(x + i y)</pre>
-     *
-     * <p>Warning: The argument {@code logOf2} must be equal to {@code log(2)} using the
-     * provided log function otherwise scaling using powers of 2 in the case of overflow
-     * will be incorrect. This is provided as an internal optimisation.
-     *
-     * @param log Log function.
-     * @param logOfeOver2 The log function applied to e, then divided by 2.
-     * @param logOf2 The log function applied to 2.
-     * @param constructor Constructor for the returned complex.
-     * @return The logarithm of this complex number.
-     * @see #abs()
-     * @see #arg()
-     */
-    private Complex log(DoubleUnaryOperator log, double logOfeOver2, double logOf2, ComplexConstructor constructor) {
-        // Handle NaN
-        if (Double.isNaN(real) || Double.isNaN(imaginary)) {
-            // Return NaN unless infinite
-            if (isInfinite()) {
-                return constructor.create(Double.POSITIVE_INFINITY, Double.NaN);
-            }
-            // No-use of the input constructor
-            return NAN;
-        }
-
-        // Returns the real part:
-        // log(sqrt(x^2 + y^2))
-        // log(x^2 + y^2) / 2
-
-        // Compute with positive values
-        double x = Math.abs(real);
-        double y = Math.abs(imaginary);
-
-        // Find the larger magnitude.
-        if (x < y) {
-            final double tmp = x;
-            x = y;
-            y = tmp;
-        }
-
-        if (x == 0) {
-            // Handle zero: raises the ‘‘divide-by-zero’’ floating-point exception.
-            return constructor.create(Double.NEGATIVE_INFINITY,
-                                      negative(real) ? Math.copySign(Math.PI, imaginary) : imaginary);
-        }
-
-        double re;
-
-        // This alters the implementation of Hull et al (1994) which used a standard
-        // precision representation of |z|: sqrt(x*x + y*y).
-        // This formula should use the same definition of the magnitude returned
-        // by Complex.abs() which is a high precision computation with scaling.
-        // The checks for overflow thus only require ensuring the output of |z|
-        // will not overflow or underflow.
-
-        if (x > HALF && x < ROOT2) {
-            // x^2+y^2 close to 1. Use log1p(x^2+y^2 - 1) / 2.
-            re = Math.log1p(x2y2m1(x, y)) * logOfeOver2;
-        } else {
-            // Check for over/underflow in |z|
-            // When scaling:
-            // log(a / b) = log(a) - log(b)
-            // So initialize the result with the log of the scale factor.
-            re = 0;
-            if (x > Double.MAX_VALUE / 2) {
-                // Potential overflow.
-                if (isPosInfinite(x)) {
-                    // Handle infinity
-                    return constructor.create(x, arg());
-                }
-                // Scale down.
-                x /= 2;
-                y /= 2;
-                // log(2)
-                re = logOf2;
-            } else if (y < Double.MIN_NORMAL) {
-                // Potential underflow.
-                if (y == 0) {
-                    // Handle real only number
-                    return constructor.create(log.applyAsDouble(x), arg());
-                }
-                // Scale up sub-normal numbers to make them normal by scaling by 2^54,
-                // i.e. more than the mantissa digits.
-                x *= 0x1.0p54;
-                y *= 0x1.0p54;
-                // log(2^-54) = -54 * log(2)
-                re = -54 * logOf2;
-            }
-            re += log.applyAsDouble(abs(x, y));
-        }
-
-        // All ISO C99 edge cases for the imaginary are satisfied by the Math library.
-        return constructor.create(re, arg());
-    }
-    private static double x2y2m1(double x, double y) {
-        // Hull et al used (x-1)*(x+1)+y*y.
-        // From the paper on page 236:
-
-        // If x == 1 there is no cancellation.
-
-        // If x > 1, there is also no cancellation, but the argument is now accurate
-        // only to within a factor of 1 + 3 EPSILSON (note that x – 1 is exact),
-        // so that error = 3 EPSILON.
-
-        // If x < 1, there can be serious cancellation:
-
-        // If 4 y^2 < |x^2 – 1| the cancellation is not serious ... the argument is accurate
-        // only to within a factor of 1 + 4 EPSILSON so that error = 4 EPSILON.
-
-        // Otherwise there can be serious cancellation and the relative error in the real part
-        // could be enormous.
-
-        final double xx = x * x;
-        final double yy = y * y;
-        // Modify to use high precision before the threshold set by Hull et al.
-        // This is to preserve the monotonic output of the computation at the switch.
-        // Set the threshold when x^2 + y^2 is above 0.5 thus subtracting 1 results in a number
-        // that can be expressed with a higher precision than any number in the range 0.5-1.0
-        // due to the variable exponent used below 0.5.
-        if (x < 1 && xx + yy > 0.5) {
-            // Large relative error.
-            // This does not use o.a.c.numbers.LinearCombination.value(x, x, y, y, 1, -1).
-            // It is optimised knowing that:
-            // - the products are squares
-            // - the final term is -1 (which does not require split multiplication and addition)
-            // - The answer will not be NaN as the terms are not NaN components
-            // - The order is known to be 1 > |x| >= |y|
-            // The squares are computed using a split multiply algorithm and
-            // the summation using an extended precision summation algorithm.
-
-            // Split x and y as one 26 bits number and one 27 bits number
-            final double xHigh = splitHigh(x);
-            final double xLow  = x - xHigh;
-            final double yHigh = splitHigh(y);
-            final double yLow  = y - yHigh;
-
-            // Accurate split multiplication x * x and y * y
-            final double x2Low = squareLow(xLow, xHigh, xx);
-            final double y2Low = squareLow(yLow, yHigh, yy);
-
-            return sumx2y2m1(xx, x2Low, yy, y2Low);
-        }
-        return (x - 1) * (x + 1) + yy;
-    }
-    /**
-     * Implement Dekker's method to split a value into two parts. Multiplying by (2^s + 1) create
-     * a big value from which to derive the two split parts.
-     * <pre>
-     * c = (2^s + 1) * a
-     * a_big = c - a
-     * a_hi = c - a_big
-     * a_lo = a - a_hi
-     * a = a_hi + a_lo
-     * </pre>
-     *
-     * <p>The multiplicand must be odd allowing a p-bit value to be split into
-     * (p-s)-bit value {@code a_hi} and a non-overlapping (s-1)-bit value {@code a_lo}.
-     * Combined they have (p􏰔-1) bits of significand but the sign bit of {@code a_lo}
-     * contains a bit of information.
-     *
-     * @param a Value.
-     * @return the high part of the value.
-     * @see <a href="https://doi.org/10.1007/BF01397083">
-     * Dekker (1971) A floating-point technique for extending the available precision</a>
-     */
-    private static double splitHigh(double a) {
-        final double c = MULTIPLIER * a;
-        return c - (c - a);
-    }
-
-    /**
-     * Compute the round-off from the square of a split number with {@code low} and {@code high}
-     * components. Uses Dekker's algorithm for split multiplication modified for a square product.
-     *
-     * <p>Note: This is candidate to be replaced with {@code Math.fma(x, x, -x * x)} to compute
-     * the round-off from the square product {@code x * x}. This would remove the requirement
-     * to compute the split number and make this method redundant. {@code Math.fma} requires
-     * JDK 9 and FMA hardware support.
-     *
-     * @param low Low part of number.
-     * @param high High part of number.
-     * @param square Square of the number.
-     * @return <code>low * low - (((product - high * high) - low * high) - high * low)</code>
-     * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
-     * Shewchuk (1997) Theorum 18</a>
-     */
-    private static double squareLow(double low, double high, double square) {
-        final double lh = low * high;
-        return low * low - (((square - high * high) - lh) - lh);
-    }
-
-    /**
-     * Compute the round-off from the sum of two numbers {@code a} and {@code b} using
-     * Dekker's two-sum algorithm. The values are required to be ordered by magnitude:
-     * {@code |a| >= |b|}.
-     *
-     * @param a First part of sum.
-     * @param b Second part of sum.
-     * @param x Sum.
-     * @return <code>b - (x - a)</code>
-     * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
-     * Shewchuk (1997) Theorum 6</a>
-     */
-    private static double fastSumLow(double a, double b, double x) {
-        // x = a + b
-        // bVirtual = x - a
-        // y = b - bVirtual
-        return b - (x - a);
-    }
-
-    /**
-     * Compute the round-off from the sum of two numbers {@code a} and {@code b} using
-     * Knuth's two-sum algorithm. The values are not required to be ordered by magnitude.
-     *
-     * @param a First part of sum.
-     * @param b Second part of sum.
-     * @param x Sum.
-     * @return <code>(a - (x - (x - a))) + (b - (x - a))</code>
-     * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
-     * Shewchuk (1997) Theorum 7</a>
-     */
-    private static double sumLow(double a, double b, double x) {
-        // x = a + b
-        // bVirtual = x - a
-        // aVirtual = x - bVirtual
-        // bRoundoff = b - bVirtual
-        // aRoundoff = a - aVirtual
-        // y = aRoundoff + bRoundoff
-        final double bVirtual = x - a;
-        return (a - (x - bVirtual)) + (b - bVirtual);
-    }
-
-    /**
-     * Sum x^2 + y^2 - 1. It is assumed that {@code y <= x < 1}.
-     *
-     * <p>Implement Shewchuk's expansion-sum algorithm: [x2Low, x2High] + [-1] + [y2Low, y2High].
-     *
-     * @param x2High High part of x^2.
-     * @param x2Low Low part of x^2.
-     * @param y2High High part of y^2.
-     * @param y2Low Low part of y^2.
-     * @return x^2 + y^2 - 1
-     * @see <a href="http://www-2.cs.cmu.edu/afs/cs/project/quake/public/papers/robust-arithmetic.ps">
-     * Shewchuk (1997) Theorum 12</a>
-     */
-    private static double sumx2y2m1(double x2High, double x2Low, double y2High, double y2Low) {
-        // Let e and f be non-overlapping expansions of components of length m and n.
-        // The following algorithm will produce a non-overlapping expansion h where the
-        // sum h_i = e + f and components of h are in increasing order of magnitude.
-
-        // Expansion-sum proceeds by a grow-expansion of the first part from one expansion
-        // into the other, extending its length by 1. The process repeats for the next part
-        // but the grow-expansion starts at the previous merge position + 1.
-        // Thus expansion-sum requires mn two-sum operations to merge length m into length n
-        // resulting in length m+n-1.
-
-        // Variables numbered from 1 as per Figure 7 (p.12). The output expansion h is placed
-        // into e increasing its length for each grow expansion.
-
-        // We have two expansions for x^2 and y^2 and the whole number -1.
-        // Expecting (x^2 + y^2) close to 1 we generate first the intermediate expansion
-        // (x^2 - 1) moving the result away from 1 where there are sparse floating point
-        // representations. This is then added to a similar magnitude y^2. Leaving the -1
-        // until last suffers from 1 ulp rounding errors more often and the requirement
-        // for a distillation sum to reduce rounding error frequency.
-
-        // Note: Do not use the alternative fast-expansion-sum of the parts sorted by magnitude.
-        // The parts can be ordered with a single comparison into:
-        // [y2Low, (y2High|x2Low), x2High, -1]
-        // The fast-two-sum saves 1 fast-two-sum and 3 two-sum operations (21 additions) and
-        // adds a penalty of a single branch condition.
-        // However the order in not "strongly non-overlapping" and the fast-expansion-sum
-        // output will not be strongly non-overlapping. The sum of the output has 1 ulp error
-        // on random cis numbers approximately 1 in 160 events. This can be removed by a
-        // distillation two-sum pass over the final expansion as a cost of 1 fast-two-sum and
-        // 3 two-sum operations! So we use the expansion sum with the same operations and
-        // no branches.
-
-        // q=running sum
-        double q = x2Low - 1;
-        double e1 = fastSumLow(-1, x2Low, q);
-        double e3 = q + x2High;
-        double e2 = sumLow(q, x2High, e3);
-
-        final double f1 = y2Low;
-        final double f2 = y2High;
-
-        // Grow expansion of f1 into e
-        q = f1 + e1;
-        e1 = sumLow(f1, e1, q);
-        double p = q + e2;
-        e2 = sumLow(q, e2, p);
-        double e4 = p + e3;
-        e3 = sumLow(p, e3, e4);
-
-        // Grow expansion of f2 into e (only required to start at e2)
-        q = f2 + e2;
-        e2 = sumLow(f2, e2, q);
-        p = q + e3;
-        e3 = sumLow(q, e3, p);
-        final double e5 = p + e4;
-        e4 = sumLow(p, e4, e5);
-
-        // Final summation:
-        // The sum of the parts is within 1 ulp of the true expansion value e:
-        // |e - sum| < ulp(sum).
-        // To achieve the exact result requires iteration of a distillation two-sum through
-        // the expansion until convergence, i.e. no smaller term changes higher terms.
-        // This requires (n-1) iterations for length n. Here we neglect this as
-        // although the method is not ensured to be exact is it robust on random
-        // cis numbers.
-        return e1 + e2 + e3 + e4 + e5;
-    }
-    /**
-     * Returns the absolute value of the complex number.
-     * <pre>abs(x + i y) = sqrt(x^2 + y^2)</pre>
-     *
-     * <p>This should satisfy the special cases of the hypot function in ISO C99 F.9.4.3:
-     * "The hypot functions compute the square root of the sum of the squares of x and y,
-     * without undue overflow or underflow."
-     *
-     * <ul>
-     * <li>hypot(x, y), hypot(y, x), and hypot(x, −y) are equivalent.
-     * <li>hypot(x, ±0) is equivalent to |x|.
-     * <li>hypot(±∞, y) returns +∞, even if y is a NaN.
-     * </ul>
-     *
-     * <p>This method is called by all methods that require the absolute value of the complex
-     * number, e.g. abs(), sqrt() and log().
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @return The absolute value.
-     */
-    public static double abs(double real, double imaginary) {
-        // Specialised implementation of hypot.
-        // See NUMBERS-143
-        return hypot(real, imaginary);
-    }
     /**
      * Returns the complex power of this complex number raised to the power of {@code x}.
      * Implements the formula:
@@ -1556,18 +1031,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Power/">Power</a>
      */
     public Complex pow(Complex x) {
-        if (real == 0 &&
-            imaginary == 0) {
-            // This value is zero. Test the other.
-            if (x.real > 0 &&
-                x.imaginary == 0) {
-                // 0 raised to positive number is 0
-                return ZERO;
-            }
-            // 0 raised to anything else is NaN
-            return NAN;
-        }
-        return log().multiply(x).exp();
+        return applyBinaryOperator(x, ComplexBiFunctions::pow);
     }
 
     /**
@@ -1589,17 +1053,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Power/">Power</a>
      */
     public Complex pow(double x) {
-        if (real == 0 &&
-            imaginary == 0) {
-            // This value is zero. Test the other.
-            if (x > 0) {
-                // 0 raised to positive number is 0
-                return ZERO;
-            }
-            // 0 raised to anything else is NaN
-            return NAN;
-        }
-        return log().multiply(x).exp();
+        return applyScalarFunction(x, ComplexBiFunctions::pow);
     }
 
     /**
@@ -1653,17 +1107,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         return applyUnaryOperator(ComplexFunctions::sqrt);
     }
 
-
-
-    /**
-     * Returns the square root of the complex number {@code sqrt(x + i y)}.
-     *
-     * @param real Real component.
-     * @param imaginary Imaginary component.
-     * @return The square root of the complex number.
-     */
-
-
     /**
      * Returns the
      * <a href="http://mathworld.wolfram.com/Sine.html">
@@ -1689,9 +1132,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         // Define in terms of sinh
         // sin(z) = -i sinh(iz)
         // Multiply this number by I, compute sinh, then multiply by back
-        return sinh(-imaginary, real, Complex::multiplyNegativeI);
+        return multiplyIApplyAndThenMultiplyNegativeI(ComplexFunctions::sinh);
     }
-
 
     /**
      * Returns the
@@ -1718,7 +1160,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         // Define in terms of cosh
         // cos(z) = cosh(iz)
         // Multiply this number by I and compute cosh.
-        return cosh(-imaginary, real, Complex::ofCartesian);
+        return multiplyIAndApply(ComplexFunctions::cosh);
     }
 
     /**
@@ -1744,7 +1186,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         // Define in terms of tanh
         // tan(z) = -i tanh(iz)
         // Multiply this number by I, compute tanh, then multiply by back
-        return tanh(-imaginary, real, Complex::multiplyNegativeI);
+        return multiplyIApplyAndThenMultiplyNegativeI(ComplexFunctions::tanh);
     }
 
     /**
@@ -1788,9 +1230,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     public Complex asin() {
         return applyUnaryOperator(ComplexFunctions::asin);
     }
-
-
-
 
     /**
      * Returns the
@@ -1849,8 +1288,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         return applyUnaryOperator(ComplexFunctions::acos);
     }
 
-
-
     /**
      * Returns the
      * <a href="http://mathworld.wolfram.com/InverseTangent.html">
@@ -1875,7 +1312,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         // Define in terms of atanh
         // atan(z) = -i atanh(iz)
         // Multiply this number by I, compute atanh, then multiply by back
-        return atanh(-imaginary, real, Complex::multiplyNegativeI);
+        return multiplyIApplyAndThenMultiplyNegativeI(ComplexFunctions::atanh);
     }
 
     /**
@@ -1917,8 +1354,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         return applyUnaryOperator(ComplexFunctions::sinh);
     }
 
-
-
     /**
      * Returns the
      * <a href="http://mathworld.wolfram.com/HyperbolicCosine.html">
@@ -1955,11 +1390,8 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Cosh/">Cosh</a>
      */
     public Complex cosh() {
-        return applyUnaryOperator(ComplexFunctions::acosh);
+        return applyUnaryOperator(ComplexFunctions::cosh);
     }
-
-
-
 
     /**
      * Returns the
@@ -2006,113 +1438,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/Tanh/">Tanh</a>
      */
     public Complex tanh() {
-        return tanh(real, imaginary, Complex::ofCartesian);
-    }
-
-    /**
-     * Returns the hyperbolic tangent of this complex number.
-     *
-     * <p>This function exists to allow implementation of the identity
-     * {@code tan(z) = -i tanh(iz)}.<p>
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @param constructor Constructor.
-     * @return The hyperbolic tangent of the complex number.
-     */
-    private static Complex tanh(double real, double imaginary, ComplexConstructor constructor) {
-        // Cache the absolute real value
-        final double x = Math.abs(real);
-
-        // Handle inf or nan.
-        if (!isPosFinite(x) || !Double.isFinite(imaginary)) {
-            if (isPosInfinite(x)) {
-                if (Double.isFinite(imaginary)) {
-                    // The sign is copied from sin(2y)
-                    // The identity sin(2a) = 2 sin(a) cos(a) is used for consistency
-                    // with the computation below. Only the magnitude is important
-                    // so drop the 2. When |y| is small sign(sin(2y)) = sign(y).
-                    final double sign = Math.abs(imaginary) < PI_OVER_2 ?
-                                        imaginary :
-                                        Math.sin(imaginary) * Math.cos(imaginary);
-                    return constructor.create(Math.copySign(1, real),
-                                              Math.copySign(0, sign));
-                }
-                // imaginary is infinite or NaN
-                return constructor.create(Math.copySign(1, real), Math.copySign(0, imaginary));
-            }
-            // Remaining cases:
-            // (0 + i inf), returns (0 + i NaN)
-            // (0 + i NaN), returns (0 + i NaN)
-            // (x + i inf), returns (NaN + i NaN) for non-zero x (including infinite)
-            // (x + i NaN), returns (NaN + i NaN) for non-zero x (including infinite)
-            // (NaN + i 0), returns (NaN + i 0)
-            // (NaN + i y), returns (NaN + i NaN) for non-zero y (including infinite)
-            // (NaN + i NaN), returns (NaN + i NaN)
-            return constructor.create(real == 0 ? real : Double.NaN,
-                                      imaginary == 0 ? imaginary : Double.NaN);
-        }
-
-        // Finite components
-        // tanh(x+iy) = (sinh(2x) + i sin(2y)) / (cosh(2x) + cos(2y))
-
-        if (real == 0) {
-            // Imaginary-only tanh(iy) = i tan(y)
-            // Identity: sin 2y / (1 + cos 2y) = tan(y)
-            return constructor.create(real, Math.tan(imaginary));
-        }
-        if (imaginary == 0) {
-            // Identity: sinh 2x / (1 + cosh 2x) = tanh(x)
-            return constructor.create(Math.tanh(real), imaginary);
-        }
-
-        // The double angles can be avoided using the identities:
-        // sinh(2x) = 2 sinh(x) cosh(x)
-        // sin(2y) = 2 sin(y) cos(y)
-        // cosh(2x) = 2 sinh^2(x) + 1
-        // cos(2y) = 2 cos^2(y) - 1
-        // tanh(x+iy) = (sinh(x)cosh(x) + i sin(y)cos(y)) / (sinh^2(x) + cos^2(y))
-        // To avoid a junction when swapping between the double angles and the identities
-        // the identities are used in all cases.
-
-        if (x > SAFE_EXP / 2) {
-            // Potential overflow in sinh/cosh(2x).
-            // Approximate sinh/cosh using exp^x.
-            // Ignore cos^2(y) in the divisor as it is insignificant.
-            // real = sinh(x)cosh(x) / sinh^2(x) = +/-1
-            final double re = Math.copySign(1, real);
-            // imag = sin(2y) / 2 sinh^2(x)
-            // sinh(x) -> sign(x) * e^|x| / 2 when x is large.
-            // sinh^2(x) -> e^2|x| / 4 when x is large.
-            // imag = sin(2y) / 2 (e^2|x| / 4) = 2 sin(2y) / e^2|x|
-            //      = 4 * sin(y) cos(y) / e^2|x|
-            // Underflow safe divide as e^2|x| may overflow:
-            // imag = 4 * sin(y) cos(y) / e^m / e^(2|x| - m)
-            // (|im| is a maximum of 2)
-            double im = Math.sin(imaginary) * Math.cos(imaginary);
-            if (x > SAFE_EXP) {
-                // e^2|x| > e^m * e^m
-                // This will underflow 2.0 / e^m / e^m
-                im = Math.copySign(0.0, im);
-            } else {
-                // e^2|x| = e^m * e^(2|x| - m)
-                im = 4 * im / EXP_M / Math.exp(2 * x - SAFE_EXP);
-            }
-            return constructor.create(re, im);
-        }
-
-        // No overflow of sinh(2x) and cosh(2x)
-
-        // Note: This does not use the definitional formula but uses the identity:
-        // tanh(x+iy) = (sinh(x)cosh(x) + i sin(y)cos(y)) / (sinh^2(x) + cos^2(y))
-
-        final double sinhx = Math.sinh(real);
-        final double coshx = Math.cosh(real);
-        final double siny = Math.sin(imaginary);
-        final double cosy = Math.cos(imaginary);
-        final double divisor = sinhx * sinhx + cosy * cosy;
-        return constructor.create(sinhx * coshx / divisor,
-                                  siny * cosy / divisor);
+        return applyUnaryOperator(ComplexFunctions::tanh);
     }
 
     /**
@@ -2157,7 +1483,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
         // Note: This is the opposite to the identity defined in the C99 standard:
         // asin(z) = -i asinh(iz)
         // Multiply this number by I, compute asin, then multiply by back
-        return asin(-imaginary, real, Complex::multiplyNegativeI);
+        return multiplyIApplyAndThenMultiplyNegativeI(ComplexFunctions::asin);
     }
 
     /**
@@ -2253,307 +1579,7 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
      * @see <a href="http://functions.wolfram.com/ElementaryFunctions/ArcTanh/">ArcTanh</a>
      */
     public Complex atanh() {
-        return atanh(real, imaginary, Complex::ofCartesian);
-    }
-
-    /**
-     * Returns the inverse hyperbolic tangent of this complex number.
-     *
-     * <p>This function exists to allow implementation of the identity
-     * {@code atan(z) = -i atanh(iz)}.
-     *
-     * <p>Adapted from {@code <boost/math/complex/atanh.hpp>}. This method only (and not
-     * invoked methods within) is distributed under the Boost Software License V1.0.
-     * The original notice is shown below and the licence is shown in full in LICENSE:
-     * <pre>
-     * (C) Copyright John Maddock 2005.
-     * Distributed under the Boost Software License, Version 1.0. (See accompanying
-     * file LICENSE or copy at https://www.boost.org/LICENSE_1_0.txt)
-     * </pre>
-     *
-     * @param real Real part.
-     * @param imaginary Imaginary part.
-     * @param constructor Constructor.
-     * @return The inverse hyperbolic tangent of the complex number.
-     */
-    private static Complex atanh(final double real, final double imaginary,
-                                 final ComplexConstructor constructor) {
-        // Compute with positive values and determine sign at the end
-        double x = Math.abs(real);
-        double y = Math.abs(imaginary);
-        // The result (without sign correction)
-        double re;
-        double im;
-
-        // Handle C99 special cases
-        if (Double.isNaN(x)) {
-            if (isPosInfinite(y)) {
-                // The sign of the real part of the result is unspecified
-                return constructor.create(0, Math.copySign(PI_OVER_2, imaginary));
-            }
-            // No-use of the input constructor.
-            // Optionally raises the ‘‘invalid’’ floating-point exception, for finite y.
-            return NAN;
-        } else if (Double.isNaN(y)) {
-            if (isPosInfinite(x)) {
-                return constructor.create(Math.copySign(0, real), Double.NaN);
-            }
-            if (x == 0) {
-                return constructor.create(real, Double.NaN);
-            }
-            // No-use of the input constructor
-            return NAN;
-        } else {
-            // x && y are finite or infinite.
-
-            // Check the safe region.
-            // The lower and upper bounds have been copied from boost::math::atanh.
-            // They are different from the safe region for asin and acos.
-            // x >= SAFE_UPPER: (1-x) == -x
-            // x <= SAFE_LOWER: 1 - x^2 = 1
-
-            if (inRegion(x, y, SAFE_LOWER, SAFE_UPPER)) {
-                // Normal computation within a safe region.
-
-                // minus x plus 1: (-x+1)
-                final double mxp1 = 1 - x;
-                final double yy = y * y;
-                // The definition of real component is:
-                // real = log( ((x+1)^2+y^2) / ((1-x)^2+y^2) ) / 4
-                // This simplifies by adding 1 and subtracting 1 as a fraction:
-                //      = log(1 + ((x+1)^2+y^2) / ((1-x)^2+y^2) - ((1-x)^2+y^2)/((1-x)^2+y^2) ) / 4
-                //
-                // real(atanh(z)) == log(1 + 4*x / ((1-x)^2+y^2)) / 4
-                // imag(atanh(z)) == tan^-1 (2y, (1-x)(1+x) - y^2) / 2
-                // imag(atanh(z)) == tan^-1 (2y, (1 - x^2 - y^2) / 2
-                // The division is done at the end of the function.
-                re = Math.log1p(4 * x / (mxp1 * mxp1 + yy));
-                // Modified from boost which does not switch the magnitude of x and y.
-                // The denominator for atan2 is 1 - x^2 - y^2.
-                // This can be made more precise if |x| > |y|.
-                final double numerator = 2 * y;
-                double denominator;
-                if (x < y) {
-                    final double tmp = x;
-                    x = y;
-                    y = tmp;
-                }
-                // 1 - x is precise if |x| >= 1
-                if (x >= 1) {
-                    denominator = (1 - x) * (1 + x) - y * y;
-                } else {
-                    // |x| < 1: Use high precision if possible:
-                    // 1 - x^2 - y^2 = -(x^2 + y^2 - 1)
-                    // Modified from boost to use the custom high precision method.
-                    denominator = -x2y2m1(x, y);
-                }
-                im = Math.atan2(numerator, denominator);
-            } else {
-                // This section handles exception cases that would normally cause
-                // underflow or overflow in the main formulas.
-
-                // C99. G.7: Special case for imaginary only numbers
-                if (x == 0) {
-                    if (imaginary == 0) {
-                        return constructor.create(real, imaginary);
-                    }
-                    // atanh(iy) = i atan(y)
-                    return constructor.create(real, Math.atan(imaginary));
-                }
-
-                // Real part:
-                // real = Math.log1p(4x / ((1-x)^2 + y^2))
-                // real = Math.log1p(4x / (1 - 2x + x^2 + y^2))
-                // real = Math.log1p(4x / (1 + x(x-2) + y^2))
-                // without either overflow or underflow in the squared terms.
-                if (x >= SAFE_UPPER) {
-                    // (1-x) = -x to machine precision:
-                    // log1p(4x / (x^2 + y^2))
-                    if (isPosInfinite(x) || isPosInfinite(y)) {
-                        re = 0;
-                    } else if (y >= SAFE_UPPER) {
-                        // Big x and y: divide by x*y
-                        re = Math.log1p((4 / y) / (x / y + y / x));
-                    } else if (y > 1) {
-                        // Big x: divide through by x:
-                        re = Math.log1p(4 / (x + y * y / x));
-                    } else {
-                        // Big x small y, as above but neglect y^2/x:
-                        re = Math.log1p(4 / x);
-                    }
-                } else if (y >= SAFE_UPPER) {
-                    if (x > 1) {
-                        // Big y, medium x, divide through by y:
-                        final double mxp1 = 1 - x;
-                        re = Math.log1p((4 * x / y) / (mxp1 * mxp1 / y + y));
-                    } else {
-                        // Big y, small x, as above but neglect (1-x)^2/y:
-                        // Note: log1p(v) == v - v^2/2 + v^3/3 ... Taylor series when v is small.
-                        // Here v is so small only the first term matters.
-                        re = 4 * x / y / y;
-                    }
-                } else if (x == 1) {
-                    // x = 1, small y:
-                    // Special case when x == 1 as (1-x) is invalid.
-                    // Simplify the following formula:
-                    // real = log( sqrt((x+1)^2+y^2) ) / 2 - log( sqrt((1-x)^2+y^2) ) / 2
-                    //      = log( sqrt(4+y^2) ) / 2 - log(y) / 2
-                    // if: 4+y^2 -> 4
-                    //      = log( 2 ) / 2 - log(y) / 2
-                    //      = (log(2) - log(y)) / 2
-                    // Multiply by 2 as it will be divided by 4 at the end.
-                    // C99: if y=0 raises the ‘‘divide-by-zero’’ floating-point exception.
-                    re = 2 * (LN_2 - Math.log(y));
-                } else {
-                    // Modified from boost which checks y > SAFE_LOWER.
-                    // if y*y -> 0 it will be ignored so always include it.
-                    final double mxp1 = 1 - x;
-                    re = Math.log1p((4 * x) / (mxp1 * mxp1 + y * y));
-                }
-
-                // Imaginary part:
-                // imag = atan2(2y, (1-x)(1+x) - y^2)
-                // if x or y are large, then the formula:
-                //   atan2(2y, (1-x)(1+x) - y^2)
-                // evaluates to +(PI - theta) where theta is negligible compared to PI.
-                if ((x >= SAFE_UPPER) || (y >= SAFE_UPPER)) {
-                    im = Math.PI;
-                } else if (x <= SAFE_LOWER) {
-                    // (1-x)^2 -> 1
-                    if (y <= SAFE_LOWER) {
-                        // 1 - y^2 -> 1
-                        im = Math.atan2(2 * y, 1);
-                    } else {
-                        im = Math.atan2(2 * y, 1 - y * y);
-                    }
-                } else {
-                    // Medium x, small y.
-                    // Modified from boost which checks (y == 0) && (x == 1) and sets re = 0.
-                    // This is same as the result from calling atan2(0, 0) so exclude this case.
-                    // 1 - y^2 = 1 so ignore subtracting y^2
-                    im = Math.atan2(2 * y, (1 - x) * (1 + x));
-                }
-            }
-        }
-
-        re /= 4;
-        im /= 2;
-        return constructor.create(changeSign(re, real),
-                                  changeSign(im, imaginary));
-    }
-
-    public static double hypot(double x, double y) {
-        // Differences to the fdlibm reference:
-        //
-        // 1. fdlibm orders the two parts using the magnitude of the upper 32-bits.
-        // This incorrectly orders numbers which differ only in the lower 32-bits.
-        // This invalidates hypot(x, y) = hypot(y, x) for small sub-normal numbers and a minority
-        // of cases of normal numbers. This implementation forces the |x| >= |y| order
-        // using the entire 63-bits of the unsigned doubles to ensure the function
-        // is commutative.
-        //
-        // 2. fdlibm computed scaling by directly writing changes to the exponent bits
-        // and maintained the high part (ha) during scaling for use in the high
-        // precision sum x^2 + y^2. Since exponent scaling cannot be applied to sub-normals
-        // the original version dropped the split number representation for sub-normals
-        // and can produce maximum errors above 1 ULP for sub-normal numbers.
-        // This version uses Dekker's method to split the number. This can be applied to
-        // sub-normals and allows dropping the condition to check for sub-normal numbers
-        // since all small numbers are handled with a single scaling factor.
-        // The effect is increased precision for the majority of sub-normal cases where
-        // the implementations compute a different result.
-        //
-        // 3. An alteration is done here to add an 'else if' instead of a second
-        // 'if' statement. Thus you cannot scale down and up at the same time.
-        //
-        // 4. There is no use of the absolute double value. The magnitude comparison is
-        // performed using the long bit representation. The computation x^2+y^2 is
-        // insensitive to the sign bit. Thus use of Math.abs(double) is only in edge-case
-        // branches.
-        //
-        // 5. The exponent different to ignore the smaller component has changed from 60 to 54.
-        //
-        // Original comments from fdlibm are in c style: /* */
-        // Extra comments added for reference.
-        //
-        // Note that the high 32-bits are compared to constants.
-        // The lowest 20-bits are the upper bits of the 52-bit mantissa.
-        // The next 11-bits are the biased exponent. The sign bit has been cleared.
-        // Scaling factors are powers of two for exact scaling.
-        // For clarity the values have been refactored to named constants.
-
-        // The mask is used to remove the sign bit.
-        final long xbits = Double.doubleToRawLongBits(x) & UNSIGN_MASK;
-        final long ybits = Double.doubleToRawLongBits(y) & UNSIGN_MASK;
-
-        // Order by magnitude: |a| >= |b|
-        double a;
-        double b;
-        /* High word of x & y */
-        int ha;
-        int hb;
-        if (ybits > xbits) {
-            a = y;
-            b = x;
-            ha = (int) (ybits >>> 32);
-            hb = (int) (xbits >>> 32);
-        } else {
-            a = x;
-            b = y;
-            ha = (int) (xbits >>> 32);
-            hb = (int) (ybits >>> 32);
-        }
-
-        // Check if the smaller part is significant.
-        // a^2 is computed in extended precision for an effective mantissa of 106-bits.
-        // An exponent difference of 54 is where b^2 will not overlap a^2.
-        if ((ha - hb) > EXP_54) {
-            /* a/b > 2**54 */
-            // or a is Inf or NaN.
-            // No addition of a + b for sNaN.
-            return Math.abs(a);
-        }
-
-        double rescale = 1.0;
-        if (ha > EXP_500) {
-            /* a > 2^500 */
-            if (ha >= EXP_1024) {
-                /* Inf or NaN */
-                // Check b is infinite for the IEEE754 result.
-                // No addition of a + b for sNaN.
-                return Math.abs(b) == Double.POSITIVE_INFINITY ?
-                    Double.POSITIVE_INFINITY :
-                    Math.abs(a);
-            }
-            /* scale a and b by 2^-600 */
-            // Before scaling: a in [2^500, 2^1023].
-            // After scaling: a in [2^-100, 2^423].
-            // After scaling: b in [2^-154, 2^423].
-            a *= TWO_POW_NEG_600;
-            b *= TWO_POW_NEG_600;
-            rescale = TWO_POW_600;
-        } else if (hb < EXP_NEG_500) {
-            // No special handling of sub-normals.
-            // These do not matter when we do not manipulate the exponent bits
-            // for scaling the split representation.
-
-            // Intentional comparison with zero.
-            if (b == 0) {
-                return Math.abs(a);
-            }
-
-            /* scale a and b by 2^600 */
-            // Effective min exponent of a sub-normal = -1022 - 52 = -1074.
-            // Before scaling: b in [2^-1074, 2^-501].
-            // After scaling: b in [2^-474, 2^99].
-            // After scaling: a in [2^-474, 2^153].
-            a *= TWO_POW_600;
-            b *= TWO_POW_600;
-            rescale = TWO_POW_NEG_600;
-        }
-
-        // High precision x^2 + y^2
-        return Math.sqrt(x2y2(a, b)) * rescale;
+        return applyUnaryOperator(ComplexFunctions::atanh);
     }
 
     /**
@@ -2716,46 +1742,6 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     }
 
     /**
-     * Check that a value is negative. It must meet all the following conditions:
-     * <ul>
-     *  <li>it is not {@code NaN},</li>
-     *  <li>it is negative signed,</li>
-     * </ul>
-     *
-     * <p>Note: This is true for negative zero.</p>
-     *
-     * @param d Value.
-     * @return {@code true} if {@code d} is negative.
-     */
-    static boolean negative(double d) {
-        return d < 0 || Double.doubleToLongBits(d) == NEGATIVE_ZERO_LONG_BITS;
-    }
-
-    /**
-     * Check that a value is positive infinity. Used to replace {@link Double#isInfinite()}
-     * when the input value is known to be positive (i.e. in the case where it has been
-     * set using {@link Math#abs(double)}).
-     *
-     * @param d Value.
-     * @return {@code true} if {@code d} is +inf.
-     */
-    private static boolean isPosInfinite(double d) {
-        return d == Double.POSITIVE_INFINITY;
-    }
-
-    /**
-     * Check that an absolute value is finite. Used to replace {@link Double#isFinite(double)}
-     * when the input value is known to be positive (i.e. in the case where it has been
-     * set using {@link Math#abs(double)}).
-     *
-     * @param d Value.
-     * @return {@code true} if {@code d} is +finite.
-     */
-    private static boolean isPosFinite(double d) {
-        return d <= Double.MAX_VALUE;
-    }
-
-    /**
      * Create a complex number given the real and imaginary parts, then multiply by {@code -i}.
      * This is used in functions that implement trigonomic identities. It is the functional
      * equivalent of:
@@ -2770,45 +1756,4 @@ public final class Complex implements Serializable, ComplexDoubleArray, ComplexD
     private static Complex multiplyNegativeI(double real, double imaginary) {
         return new Complex(imaginary, -real);
     }
-
-    /**
-     * Change the sign of the magnitude based on the signed value.
-     *
-     * <p>If the signed value is negative then the result is {@code -magnitude}; otherwise
-     * return {@code magnitude}.
-     *
-     * <p>A signed value of {@code -0.0} is treated as negative. A signed value of {@code NaN}
-     * is treated as positive.
-     *
-     * <p>This is not the same as {@link Math#copySign(double, double)} as this method
-     * will change the sign based on the signed value rather than copy the sign.
-     *
-     * @param magnitude the magnitude
-     * @param signedValue the signed value
-     * @return magnitude or -magnitude.
-     * @see #negative(double)
-     */
-    private static double changeSign(double magnitude, double signedValue) {
-        return negative(signedValue) ? -magnitude : magnitude;
-    }
-
-
-
-
-    /**
-     * Return {@code x^2 + y^2} with high accuracy.
-     *
-     * <p>It is assumed that {@code 2^500 > |x| >= |y| > 2^-500}. Thus there will be no
-     * overflow or underflow of the result. The inputs are not assumed to be unsigned.
-     *
-     * <p>The computation is performed using Dekker's method for extended precision
-     * multiplication of x and y and then summation of the extended precision squares.
-     *
-     * @param x Value x.
-     * @param y Value y
-     * @return x^2 + y^2
-     * @see <a href="https://doi.org/10.1007/BF01397083">
-     * Dekker (1971) A floating-point technique for extending the available precision</a>
-     */
-
 }

@@ -1273,7 +1273,7 @@ public final class BigFraction
         BigInteger result = value.shiftRight(bits);
         if (value.testBit(bits - 1) &&
             (hasFractionalBits ||
-             (value.getLowestSetBit() < bits - 1) ||
+             value.getLowestSetBit() < bits - 1 ||
              value.testBit(bits))) {
             result = result.add(BigInteger.ONE); //round up
         }

@@ -110,7 +110,7 @@ public class ComplexListTest {
     void testArrayConj() {
         final ComplexList list = createList();
 
-        final DComplexArray originalCopy = ComplexList.parse(list.toString());
+        final ComplexArray originalCopy = ComplexList.parse(list.toString());
 
         //conjugate of conjugate - should get back original
         list.apply(ComplexArrayFunctions::conj).apply(ComplexArrayFunctions::conj);
@@ -142,7 +142,7 @@ public class ComplexListTest {
     void testArrayExp() {
         final ComplexList list = createList();
 
-        final DComplexArray originalCopy = ComplexList.parse(list.toString());
+        final ComplexArray originalCopy = ComplexList.parse(list.toString());
 
         //exp
 

@@ -18,5 +18,5 @@ package org.apache.commons.numbers.complex;
 
 @FunctionalInterface
 public interface ComplexDoubleUnaryOperator {
-    DComplexArray apply(DComplexArray input, DComplexArray result);
+    ComplexArray apply(ComplexArray input, ComplexArray result);
 }

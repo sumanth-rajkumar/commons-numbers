@@ -24,7 +24,7 @@ import java.util.List;
 
 
 
-public class ComplexList extends AbstractList<DComplex> implements List<DComplex>, DComplexArray {
+public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexArray {
     /** TODO. */
     private static final double[] DEFAULT_EMPTY = {};
     /** TODO. */
@@ -189,7 +189,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
 
 
     @Override
-    public final DComplex get(int index) {
+    public final ComplexDouble get(int index) {
         return Complex.ofCartesian(realParts[index], imaginaryParts[index]);
     }
 
@@ -200,7 +200,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
      * @return
     */
     @Override
-    public Iterator<DComplex> iterator(int index, int length) {
+    public Iterator<ComplexDouble> iterator(int index, int length) {
         //To do.
         throw new UnsupportedOperationException();
     }
@@ -214,7 +214,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
      * @return
     */
     @Override
-    public DComplexArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
+    public ComplexArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
         for (int i = 0; i < len; i += 2) {
             final int srcOffset = sourceIndex + i * 2;
             this.realParts[index + i] = realAndImgPairs[srcOffset];
@@ -230,7 +230,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
      * @return
     */
     @Override
-    public DComplexArray setValue(int index, DComplex c) {
+    public ComplexArray setValue(int index, ComplexDouble c) {
         realParts[index] = c.real();
         imaginaryParts[index] = c.imag();
         return this;
@@ -244,14 +244,14 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
      * @return
     */
     @Override
-    public DComplexArray setValue(int index, double r, double i) {
+    public ComplexArray setValue(int index, double r, double i) {
         realParts[index] = r;
         imaginaryParts[index] = i;
         return this;
     }
 
     @Override
-    public final DComplex set(int index, DComplex element) {
+    public final ComplexDouble set(int index, ComplexDouble element) {
         rangeCheck(index);
 
         Complex oldValue = Complex.ofCartesian(realParts[index], imaginaryParts[index]);
@@ -290,7 +290,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
 
 
     @Override
-    public final boolean add(DComplex element) {
+    public final boolean add(ComplexDouble element) {
         return add(element.real(), element.imag());
     }
 
@@ -315,7 +315,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
     }
 
     @Override
-    public final void add(int index, DComplex element) {
+    public final void add(int index, ComplexDouble element) {
         rangeCheck(index);
         modCount++;
         final int s;
@@ -529,31 +529,31 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
     }
 
 
-    public final Complex forEach(int index, DComplexUnaryOperator operator) {
-        return (Complex) forEach(index, operator, DComplexConstructor.D_COMPLEX_RESULT);
+    public final Complex forEach(int index, ComplexUnaryOperator operator) {
+        return (Complex) forEach(index, operator, ComplexConstructor.D_COMPLEX_RESULT);
     }
 
-    public final DComplex forEach(int index, DComplexUnaryOperator operator, DComplexConstructor<DComplex> result) {
+    public final ComplexDouble forEach(int index, ComplexUnaryOperator operator, ComplexConstructor<ComplexDouble> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], result);
     }
 
-    public final Complex forEach(int index, Complex operand, DComplexBinaryOperator operator) {
-        return (Complex) forEach(index, operand, operator, DComplexConstructor.D_COMPLEX_RESULT);
+    public final Complex forEach(int index, Complex operand, ComplexBinaryOperator operator) {
+        return (Complex) forEach(index, operand, operator, ComplexConstructor.D_COMPLEX_RESULT);
     }
 
-    public final DComplex forEach(int index, Complex operand, DComplexBinaryOperator operator,
-                               DComplexConstructor<DComplex> result) {
+    public final ComplexDouble forEach(int index, Complex operand, ComplexBinaryOperator operator,
+                                       ComplexConstructor<ComplexDouble> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], operand.real(),
             operand.imag(), result);
     }
 
 
-    public final ComplexList forEach(DComplexUnaryOperator operator) {
+    public final ComplexList forEach(ComplexUnaryOperator operator) {
         return  forEach(0, size, operator);
     }
-    public final ComplexList forEach(int startIndex, int length, DComplexUnaryOperator operator) {
+    public final ComplexList forEach(int startIndex, int length, ComplexUnaryOperator operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
@@ -567,22 +567,22 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
         return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
-    public final ComplexList forEach(Complex operand, DComplexBinaryOperator operator) {
+    public final ComplexList forEach(Complex operand, ComplexBinaryOperator operator) {
         return  forEach(operand.real(), operand.imag(), operator);
     }
 
     public final ComplexList forEach(double realOperand, double imaginaryOperand,
-                                     DComplexBinaryOperator operator) {
+                                     ComplexBinaryOperator operator) {
         return  forEach(0, size, realOperand,  imaginaryOperand, operator);
     }
 
     public final ComplexList forEach(int startIndex, int length, Complex operand,
-                                     DComplexBinaryOperator operator) {
+                                     ComplexBinaryOperator operator) {
         return  forEach(startIndex, length, operand.real(), operand.imag(),
             operator);
     }
 
-    private static final class Cursor  implements DComplex, DComplexConstructor<Void> {
+    private static final class Cursor  implements ComplexDouble, ComplexConstructor<Void> {
         /**
          * To do.
         */
@@ -649,7 +649,7 @@ public class ComplexList extends AbstractList<DComplex> implements List<DComplex
         }
     }
     public final ComplexList forEach(int startIndex, int length, double realOperand,
-                                     double imaginaryOperand, DComplexBinaryOperator operator) {
+                                     double imaginaryOperand, ComplexBinaryOperator operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);

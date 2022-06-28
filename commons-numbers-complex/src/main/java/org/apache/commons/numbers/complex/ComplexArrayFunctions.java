@@ -8,16 +8,16 @@ public class ComplexArrayFunctions {
      *
      * <p>\( (1 + i 0) \).
      */
-    public static final ComplexResult<Complex> ONE = (x, y) -> Complex.ofCartesian(1, 0);
+    public static final DComplexConstructor<Complex> ONE = (x, y) -> Complex.ofCartesian(1, 0);
     /**
      * A complex number representing zero.
      *
      * <p>\( (0 + i 0) \).
      */
-    public static final ComplexResult<Complex> ZERO = (x, y) -> Complex.ofCartesian(0, 0);
+    public static final DComplexConstructor<Complex> ZERO = (x, y) -> Complex.ofCartesian(0, 0);
 
     /** A complex number representing {@code NaN + i NaN}. */
-    public static final ComplexResult<Complex> NAN = (x, y) -> Complex.ofCartesian(Double.NaN, Double.NaN);
+    public static final DComplexConstructor<Complex> NAN = (x, y) -> Complex.ofCartesian(Double.NaN, Double.NaN);
     /** &pi;/2. */
     private static final double PI_OVER_2 = 0.5 * Math.PI;
     /** &pi;/4. */
@@ -315,17 +315,17 @@ public class ComplexArrayFunctions {
         return d == Double.POSITIVE_INFINITY;
     }
 
-    public static ComplexDoubleArray conj(ComplexDoubleArray input, ComplexDoubleArray out) {
+    public static DComplexArray conj(DComplexArray input, DComplexArray out) {
         final int len = input.size();
         for (int i = 0; i < len; i++) {
-            ComplexDouble c = input.get(i);
+            DComplex c = input.get(i);
             out = arrayConj(c.real(), c.imag(), out, i);
         }
         return out;
     }
 
-    public static ComplexDoubleArray arrayConj(double r, double i,
-                                               ComplexArrayResult<ComplexDoubleArray> resultConsumer, int index) {
+    public static DComplexArray arrayConj(double r, double i,
+                                          ComplexArrayResult<DComplexArray> resultConsumer, int index) {
         return resultConsumer.setValue(index, r, -i);
     }
 

@@ -21,7 +21,7 @@ package org.apache.commons.numbers.complex;
 import java.util.Iterator;
 
 
-public interface ComplexDoubleArray extends Iterable<ComplexDouble>, ComplexArrayResult {
+public interface DComplexArray extends Iterable<DComplex>, ComplexArrayResult {
 
     int size();
 
@@ -37,7 +37,7 @@ public interface ComplexDoubleArray extends Iterable<ComplexDouble>, ComplexArra
         return result;
     }
 
-    default ComplexDoubleArray apply(ComplexDoubleUnaryOperator op) {
+    default DComplexArray apply(ComplexDoubleUnaryOperator op) {
         return op.apply(this, this);
     }
 
@@ -47,19 +47,19 @@ public interface ComplexDoubleArray extends Iterable<ComplexDouble>, ComplexArra
 
     void get(int index, int destIndex, int len, double[] realAndImgPairs);
 
-    ComplexDouble get(int index);
+    DComplex get(int index);
 
-    default Iterator<ComplexDouble> iterator() {
+    default Iterator<DComplex> iterator() {
         return iterator(0, size());
     }
 
-    Iterator<ComplexDouble> iterator(int index, int length);
+    Iterator<DComplex> iterator(int index, int length);
 
-    ComplexDoubleArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs);
+    DComplexArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs);
 
-    ComplexDoubleArray setValue(int index, ComplexDouble c);
+    DComplexArray setValue(int index, DComplex c);
 
-    ComplexDoubleArray setValue(int index, double r, double i);
+    DComplexArray setValue(int index, double r, double i);
 
     void ensureCapacity(int capacity);
 

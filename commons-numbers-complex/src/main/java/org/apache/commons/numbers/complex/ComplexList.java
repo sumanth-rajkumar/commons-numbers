@@ -22,10 +22,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.apache.commons.numbers.complex.Complex.CARTESIAN_RESULT;
-import static org.apache.commons.numbers.complex.Complex.negative;
 
-public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexDoubleArray {
+
+public class ComplexList extends AbstractList<DComplex> implements List<DComplex>, DComplexArray {
     /** TODO. */
     private static final double[] DEFAULT_EMPTY = {};
     /** TODO. */
@@ -190,7 +189,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
 
 
     @Override
-    public final ComplexDouble get(int index) {
+    public final DComplex get(int index) {
         return Complex.ofCartesian(realParts[index], imaginaryParts[index]);
     }
 
@@ -201,7 +200,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public Iterator<ComplexDouble> iterator(int index, int length) {
+    public Iterator<DComplex> iterator(int index, int length) {
         //To do.
         throw new UnsupportedOperationException();
     }
@@ -215,7 +214,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public ComplexDoubleArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
+    public DComplexArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
         for (int i = 0; i < len; i += 2) {
             final int srcOffset = sourceIndex + i * 2;
             this.realParts[index + i] = realAndImgPairs[srcOffset];
@@ -231,9 +230,9 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public ComplexDoubleArray setValue(int index, ComplexDouble c) {
-        realParts[index] = c.getReal();
-        imaginaryParts[index] = c.getImaginary();
+    public DComplexArray setValue(int index, DComplex c) {
+        realParts[index] = c.real();
+        imaginaryParts[index] = c.imag();
         return this;
     }
 
@@ -245,19 +244,19 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public ComplexDoubleArray setValue(int index, double r, double i) {
+    public DComplexArray setValue(int index, double r, double i) {
         realParts[index] = r;
         imaginaryParts[index] = i;
         return this;
     }
 
     @Override
-    public final ComplexDouble set(int index, ComplexDouble element) {
+    public final DComplex set(int index, DComplex element) {
         rangeCheck(index);
 
         Complex oldValue = Complex.ofCartesian(realParts[index], imaginaryParts[index]);
-        realParts[index] = element.getReal();
-        imaginaryParts[index] = element.getImaginary();
+        realParts[index] = element.real();
+        imaginaryParts[index] = element.imag();
         return oldValue;
 
     }
@@ -291,8 +290,8 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
 
 
     @Override
-    public final boolean add(ComplexDouble element) {
-        return add(element.getReal(), element.getImaginary());
+    public final boolean add(DComplex element) {
+        return add(element.real(), element.imag());
     }
 
     public final boolean add(double real, double imag) {
@@ -316,7 +315,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
     }
 
     @Override
-    public final void add(int index, ComplexDouble element) {
+    public final void add(int index, DComplex element) {
         rangeCheck(index);
         modCount++;
         final int s;
@@ -329,8 +328,8 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
         System.arraycopy(this.imaginaryParts, index,
             this.imaginaryParts, index + 1,
             s - index);
-        this.realParts[index] = element.getReal();
-        this.imaginaryParts[index] = element.getImaginary();
+        this.realParts[index] = element.real();
+        this.imaginaryParts[index] = element.imag();
         size = s + 1;
     }
 
@@ -419,25 +418,25 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
         return r;
     }
 
-    // public double getReal()
-    public final double getReal(int index) {
+    // public double real()
+    public final double real(int index) {
         rangeCheck(index);
         return realParts[index];
     }
 
-    public final double[] getRealList(int index, int length) {
+    public final double[] realList(int index, int length) {
         rangeCheckForSubList(index, length);
         double[] result = new double[length];
         System.arraycopy(realParts, index, result, 0, length);
         return result;
     }
 
-    public final double getImaginary(int index) {
+    public final double imag(int index) {
         rangeCheck(index);
         return imaginaryParts[index];
     }
 
-    public final double[] getImaginaryList(int index, int length) {
+    public final double[] imagList(int index, int length) {
         rangeCheckForSubList(index, length);
         double[] result = new double[length];
         System.arraycopy(imaginaryParts, index, result, 0, length);
@@ -530,31 +529,31 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
     }
 
 
-    public final Complex forEach(int index, ComplexFunction<Complex> operator) {
-        return forEach(index, operator, Complex.CARTESIAN_RESULT);
+    public final Complex forEach(int index, DComplexUnaryOperator operator) {
+        return (Complex) forEach(index, operator, DComplexConstructor.D_COMPLEX_RESULT);
     }
 
-    public final <R> R forEach(int index, ComplexFunction<R> operator, ComplexResult<R> result) {
+    public final DComplex forEach(int index, DComplexUnaryOperator operator, DComplexConstructor<DComplex> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], result);
     }
 
-    public final Complex forEach(int index, Complex operand, ComplexBiFunction operator) {
-        return forEach(index, operand, operator, CARTESIAN_RESULT);
+    public final Complex forEach(int index, Complex operand, DComplexBinaryOperator operator) {
+        return (Complex) forEach(index, operand, operator, DComplexConstructor.D_COMPLEX_RESULT);
     }
 
-    public final <R> R forEach(int index, Complex operand, ComplexBiFunction operator,
-                               ComplexResult<R> result) {
+    public final DComplex forEach(int index, Complex operand, DComplexBinaryOperator operator,
+                               DComplexConstructor<DComplex> result) {
         this.rangeCheck(index);
-        return operator.apply(this.realParts[index], this.imaginaryParts[index], operand.getReal(),
-            operand.getImaginary(), result);
+        return operator.apply(this.realParts[index], this.imaginaryParts[index], operand.real(),
+            operand.imag(), result);
     }
 
 
-    public final ComplexList forEach(ComplexFunction<Void> operator) {
+    public final ComplexList forEach(DComplexUnaryOperator operator) {
         return  forEach(0, size, operator);
     }
-    public final ComplexList forEach(int startIndex, int length, ComplexFunction operator) {
+    public final ComplexList forEach(int startIndex, int length, DComplexUnaryOperator operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
@@ -563,27 +562,27 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
             realParts, imaginaryParts, startIndex, s);
         for (int i = 0; i < length; i++) {
             cursor.setIndex(i);
-            operator.apply(cursor.getReal(), cursor.getImaginary(), cursor);
+            operator.apply(cursor.real(), cursor.imag(), cursor);
         }
         return getComplexList(destinationRealPart, destinationImaginaryPart, length);
     }
 
-    public final ComplexList forEach(Complex operand, ComplexBiFunction operator) {
-        return  forEach(operand.getReal(), operand.getImaginary(), operator);
+    public final ComplexList forEach(Complex operand, DComplexBinaryOperator operator) {
+        return  forEach(operand.real(), operand.imag(), operator);
     }
 
     public final ComplexList forEach(double realOperand, double imaginaryOperand,
-                                     ComplexBiFunction operator) {
+                                     DComplexBinaryOperator operator) {
         return  forEach(0, size, realOperand,  imaginaryOperand, operator);
     }
 
     public final ComplexList forEach(int startIndex, int length, Complex operand,
-                                     ComplexBiFunction operator) {
-        return  forEach(startIndex, length, operand.getReal(), operand.getImaginary(),
+                                     DComplexBinaryOperator operator) {
+        return  forEach(startIndex, length, operand.real(), operand.imag(),
             operator);
     }
 
-    private static final class Cursor  implements ComplexDouble, ComplexResult<Void> {
+    private static final class Cursor  implements DComplex, DComplexConstructor<Void> {
         /**
          * To do.
         */
@@ -640,16 +639,6 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
         }
 
         @Override
-        public double getReal() {
-            return srcRealPart[srcStart + offset];
-        }
-
-        @Override
-        public double getImaginary() {
-            return srcImgPart[srcStart + offset];
-        }
-
-        @Override
         public double real() {
             return srcRealPart[srcStart + offset];
         }
@@ -660,7 +649,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
         }
     }
     public final ComplexList forEach(int startIndex, int length, double realOperand,
-                                     double imaginaryOperand, ComplexBiFunction operator) {
+                                     double imaginaryOperand, DComplexBinaryOperator operator) {
         rangeCheckForSubList(startIndex, length);
         double[] destinationRealPart = getDestinationRealPart(startIndex, length, false);
         double[] destinationImaginaryPart = getDestinationImaginaryPart(startIndex, length, false);
@@ -670,7 +659,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
 
         for (int i = 0; i < length; i++) {
             cursor.setIndex(i);
-            operator.apply(cursor.getReal(), cursor.getImaginary(), realOperand,
+            operator.apply(cursor.real(), cursor.imag(), realOperand,
                                                      imaginaryOperand, cursor);
         }
         return getComplexList(destinationRealPart, destinationImaginaryPart, length);
@@ -714,27 +703,27 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
     }
 
     public final Complex multiply(int index, Complex factor) {
-        return forEach(index, factor, ComplexFunctions::multiply);
+        return forEach(index, factor, Complex::multiply);
     }
 
     public final ComplexList multiply(Complex factor) {
-        return forEach(0, size, factor.getReal(), factor.getImaginary(), ComplexFunctions::multiply);
+        return forEach(0, size, factor.real(), factor.imag(), ComplexFunctions::multiply);
     }
 
     public final ComplexList multiply(int startIndex, int length, Complex factor) {
-        return forEach(startIndex, length, factor.getReal(), factor.getImaginary(), ComplexFunctions::multiply);
+        return forEach(startIndex, length, factor.real(), factor.imag(), ComplexFunctions::multiply);
     }
 
     public final Complex divide(int index, Complex factor) {
-        return forEach(index, factor, ComplexFunctions::divide);
+        return forEach(index, factor, Complex::divide);
     }
 
     public final ComplexList divide(Complex factor) {
-        return forEach(0, size, factor.getReal(), factor.getImaginary(), ComplexFunctions::divide);
+        return forEach(0, size, factor.real(), factor.imag(), ComplexFunctions::divide);
     }
 
     public final ComplexList divide(int startIndex, int length, Complex factor) {
-        return forEach(startIndex, length, factor.getReal(), factor.getImaginary(), ComplexFunctions::divide);
+        return forEach(startIndex, length, factor.real(), factor.imag(), ComplexFunctions::divide);
     }
 
 

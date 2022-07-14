@@ -24,7 +24,7 @@ import java.util.List;
 
 
 
-public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexArray {
+public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexVector {
     /** TODO. */
     private static final double[] DEFAULT_EMPTY = {};
     /** TODO. */
@@ -193,6 +193,33 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
         return Complex.ofCartesian(realParts[index], imaginaryParts[index]);
     }
 
+    @Override
+    public ComplexVector set(int index, double real, double imaginary) {
+        realParts[index] = real;
+        imaginaryParts[index] = imaginary;
+        return this;
+    }
+
+    @Override
+    public double getReal(int i) {
+        return realParts[i];
+    }
+
+    @Override
+    public ComplexVector setReal(int i, double val) {
+        return null;
+    }
+
+    @Override
+    public double getImag(int i) {
+        return imaginaryParts[i];
+    }
+
+    @Override
+    public ComplexVector setImag(int i, double val) {
+        return null;
+    }
+
     /**
      * To do.
      * @param index
@@ -214,7 +241,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public ComplexArray setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
+    public ComplexVector setValues(int index, int sourceIndex, int len, double[] realAndImgPairs) {
         for (int i = 0; i < len; i += 2) {
             final int srcOffset = sourceIndex + i * 2;
             this.realParts[index + i] = realAndImgPairs[srcOffset];
@@ -230,7 +257,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public ComplexArray setValue(int index, ComplexDouble c) {
+    public ComplexVector setValue(int index, ComplexDouble c) {
         realParts[index] = c.real();
         imaginaryParts[index] = c.imag();
         return this;
@@ -244,7 +271,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
      * @return
     */
     @Override
-    public ComplexArray setValue(int index, double r, double i) {
+    public ComplexVector setValue(int index, double r, double i) {
         realParts[index] = r;
         imaginaryParts[index] = i;
         return this;

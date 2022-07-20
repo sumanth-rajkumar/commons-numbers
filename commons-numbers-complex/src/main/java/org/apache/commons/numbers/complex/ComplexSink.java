@@ -18,27 +18,23 @@
 package org.apache.commons.numbers.complex;
 
 /**
- * Represents a unary operation on a Cartesian form of a complex number \( a + ib \)
- * where \( a \) and \( b \) are real numbers represented as two {@code double}
- * parts. The operation creates a complex number result; the result is supplied
- * to a terminating consumer function which may return an object representation
- * of the complex result.
+ * Represents a data sink for a complex number \( (a + i b) \).
+ * Operations return a result of type {@code R}.
  *
  * <p>This is a functional interface whose functional method is
- * {@link #apply(double, double, ComplexSink)}.
+ * {@link #apply(double, double)}.
  *
- * @param <R> The type of the complex result
+ * @param <R> The type of the result
  * @since 1.1
  */
 @FunctionalInterface
-public interface ComplexUnaryOperator<R> {
+public interface ComplexSink<R> {
 
     /**
-     * Represents an operator that accepts real and imaginary parts of a complex number and supplies the complex result to the provided consumer.
+     * Represents a function that accepts real and imaginary part of complex number and returns an object.
      * @param real Real part \( a \) of the complex number \( (a +ib) \).
      * @param imaginary Imaginary part \( b \) of the complex number \( (a +ib) \).
-     * @param out Consumer for the complex result.
-     * @return the object returned by the provided consumer.
+     * @return R the object encapsulating the complex result
      */
-    R apply(double real, double imaginary, ComplexSink<R> out);
+    R apply(double real, double imaginary);
 }

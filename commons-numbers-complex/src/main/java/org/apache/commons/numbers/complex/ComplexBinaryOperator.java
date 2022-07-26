@@ -17,60 +17,31 @@
 
 package org.apache.commons.numbers.complex;
 
-import java.util.Objects;
-import java.util.function.BinaryOperator;
-
-
 /**
- * Represents an operation upon two operands of the same type, producing a result of the same type as the operands.
- * This is a specialization of BinaryOperator for the case where the operands and the result are all of the same type.
- * This is a functional interface whose functional method is apply(DComplex, DComplex).
-*/
+ * Represents a binary operation on a Cartesian form of a complex number \( a + ib \)
+ * where \( a \) and \( b \) are real numbers represented as two {@code double}
+ * parts. The operation creates a complex number result; the result is supplied
+ * to a terminating consumer function which may return an object representation
+ * of the complex result.
+ *
+ * <p>This is a functional interface whose functional method is
+ * {@link #apply(double, double, double, double, ComplexSink)}.
+ *
+ * @param <R> The type of the complex result
+ * @since 1.1
+ */
 @FunctionalInterface
-public interface ComplexBinaryOperator extends BinaryOperator<ComplexDouble> {
+public interface ComplexBinaryOperator<R> {
 
     /**
-     * Represents an operator that accepts two complex operands and a complex constructor to produce and return the result.
-     * @param c1 Complex number 1
-     * @param c2 Complex number 2
-     * @param result Constructor
-     * @return DComplex
+     * Represents an operator that accepts real and imaginary parts of two complex numbers and supplies the complex result to the provided consumer.
+     *
+     * @param real1 Real part \( a \) of the first complex number \( (a +ib) \).
+     * @param imaginary1 Imaginary part \( b \) of the first complex number \( (a +ib) \).
+     * @param real2 Real part \( a \) of the second complex number \( (a +ib) \).
+     * @param imaginary2 Imaginary part \( b \) of the second complex number \( (a +ib) \).
+     * @param out Consumer for the complex result.
+     * @return the object returned by the provided consumer.
      */
-    ComplexDouble apply(ComplexDouble c1, ComplexDouble c2, ComplexConstructor<ComplexDouble> result);
-
-    /**
-     * Represents an operator that accepts real and imaginary parts of two complex operands and a complex constructor to produce and return the result.
-     * @param r1 real 1
-     * @param i1 imaginary 1
-     * @param r2 real 2
-     * @param i2 imaginary 2
-     * @param out constructor
-     * @return DComplex
-     */
-    default ComplexDouble apply(double r1, double i1, double r2, double i2, ComplexConstructor<ComplexDouble> out) {
-        return apply(Complex.ofCartesian(r1, i1), Complex.ofCartesian(r2, i2), out);
-    }
-
-    /**
-     * Represents an operator that accepts 2 complex operands and produces a result.
-     * @param c1 Complex number 1
-     * @param c2 Complex number 2
-     * @return DComplex
-     */
-    @Override
-    default ComplexDouble apply(ComplexDouble c1, ComplexDouble c2) {
-        return apply(c1, c2, ComplexConstructor.D_COMPLEX_RESULT);
-    }
-
-    /**
-     * Returns a composed function that first applies this function to its input, and then applies the after function to the result.
-     * If evaluation of either function throws an exception, it is relayed to the caller of the composed function.
-     * @param after the function to apply after this function is applied
-     * @return a composed function that first applies this function and then applies the after function
-     */
-    default ComplexBinaryOperator thenApply(ComplexUnaryOperator after) {
-        Objects.requireNonNull(after);
-        return (ComplexDouble c1, ComplexDouble c2, ComplexConstructor<ComplexDouble> out) -> after.apply(apply(c1, c2, out), out);
-
-    }
+    R apply(double real1, double imaginary1, double real2, double imaginary2, ComplexSink<R> out);
 }

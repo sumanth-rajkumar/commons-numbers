@@ -40,8 +40,8 @@ public interface ComplexBinaryOperator<R> {
      * @param imaginary1 Imaginary part \( b \) of the first complex number \( (a +ib) \).
      * @param real2 Real part \( a \) of the second complex number \( (a +ib) \).
      * @param imaginary2 Imaginary part \( b \) of the second complex number \( (a +ib) \).
-     * @param out Consumer for the complex result.
+     * @param action Consumer for the complex result.
      * @return the object returned by the provided consumer.
      */
-    R apply(double real1, double imaginary1, double real2, double imaginary2, ComplexSink<R> out);
+    R apply(double real1, double imaginary1, double real2, double imaginary2, ComplexSink<R> action);
 }

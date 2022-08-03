@@ -53,8 +53,8 @@ public interface ComplexDouble {
      * @param operator DComplexUnaryOperator
      * @return Complex
      */
-    default Complex applyUnaryOperator(ComplexUnaryOperator operator) {
-        return (Complex) operator.apply(this, Complex::ofCartesian);
+    default ComplexDouble applyUnaryOperator(ComplexUnaryOperator operator) {
+        return (ComplexDouble) operator.apply(this.real(), this.imag(), Complex::ofCartesian);
     }
 
     /**
@@ -63,7 +63,7 @@ public interface ComplexDouble {
      * @param input DComplex
      * @return Complex
      */
-    default Complex applyBinaryOperator(ComplexDouble input, ComplexBinaryOperator operator) {
-        return (Complex) operator.apply(this, input, Complex::ofCartesian);
+    default ComplexDouble applyBinaryOperator(ComplexDouble input, ComplexBinaryOperator operator) {
+        return (ComplexDouble) operator.apply(this.real(), this.imag(), input.real(), input.imag(), Complex::ofCartesian);
     }
 }

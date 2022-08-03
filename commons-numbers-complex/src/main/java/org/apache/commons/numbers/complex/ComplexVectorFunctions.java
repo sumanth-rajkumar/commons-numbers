@@ -7,16 +7,16 @@ public class ComplexVectorFunctions {
          *
          * <p>\( (1 + i 0) \).
          */
-        public static final ComplexConstructor<Complex> ONE = (x, y) -> Complex.ofCartesian(1, 0);
+        public static final ComplexSink<Complex> ONE = (x, y) -> Complex.ofCartesian(1, 0);
         /**
          * A complex number representing zero.
          *
          * <p>\( (0 + i 0) \).
          */
-        public static final ComplexConstructor<Complex> ZERO = (x, y) -> Complex.ofCartesian(0, 0);
+        public static final ComplexSink<Complex> ZERO = (x, y) -> Complex.ofCartesian(0, 0);
 
         /** A complex number representing {@code NaN + i NaN}. */
-        public static final ComplexConstructor<Complex> NAN = (x, y) -> Complex.ofCartesian(Double.NaN, Double.NaN);
+        public static final ComplexSink<Complex> NAN = (x, y) -> Complex.ofCartesian(Double.NaN, Double.NaN);
         /** &pi;/2. */
         private static final double PI_OVER_2 = 0.5 * Math.PI;
         /** &pi;/4. */

@@ -19,7 +19,7 @@ package org.apache.commons.numbers.complex;
 
 
 @FunctionalInterface
-public  interface ComplexVectorResult<R> {
+public interface ComplexVectorResult<R> {
 
     R setValue(int index, double r, double i);
 

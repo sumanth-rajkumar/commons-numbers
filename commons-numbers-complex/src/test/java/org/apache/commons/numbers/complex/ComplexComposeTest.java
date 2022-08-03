@@ -33,7 +33,7 @@ class ComplexComposeTest {
     private static final ComplexUnaryOperator conjMultiplyImag = conj.thenApply(multiplyImag);
     private static final ComplexUnaryOperator identity1 = multiplyImagConj.thenApply(multiplyImagConj);
     private static final ComplexUnaryOperator identity2 = conjMultiplyImag.thenApply(conjMultiplyImag);
-    private static final ComplexBinaryOperator divide = ComplexBiFunctions::divide;
+    private static final ComplexBinaryOperator divide = ComplexFunctions::divide;
 
 
     @Test
@@ -41,12 +41,12 @@ class ComplexComposeTest {
         Random random = new Random();
         double real = random.nextInt();
         double imag = random.nextInt();
-        Complex c = (Complex) ComplexDouble.of(real, imag);
+        Complex c = Complex.ofCartesian(real, imag);
 
         Assertions.assertEquals(c.getReal(), real);
         Assertions.assertEquals(c.getImaginary(), imag);
 
-        Complex c1 = (Complex) multiplyImagConj.thenApply(neg).apply(c, ComplexConstructor.D_COMPLEX_RESULT);
+        Complex c1 = (Complex) multiplyImagConj.thenApply(neg).apply(c, ComplexSink.D_COMPLEX_RESULT);
         Complex c2 = (Complex) conjMultiplyImag.apply(c);
 
         Assertions.assertEquals(c1, c2);
@@ -62,8 +62,8 @@ class ComplexComposeTest {
     void testBinaryComposing() {
         Complex c = (Complex) ComplexDouble.of(3, 4);
         Complex c2 = (Complex) ComplexDouble.of(5, 6);
-        Complex res = (Complex) divide.apply(c, c2);
-        Complex res2 = (Complex) divide.apply(3, 4, 5, 6, ComplexConstructor.D_COMPLEX_RESULT);
+        Complex res = (Complex) divide.apply(c.getReal(), c.getImaginary(), c2.getReal(), c2.getImaginary(), Complex::ofCartesian);
+        Complex res2 = (Complex) divide.apply(3, 4, 5, 6, Complex::ofCartesian);
         Assertions.assertEquals(39.0 / 61.0, res.real());
         Assertions.assertEquals(2.0 / 61.0, res.imag());
         Assertions.assertEquals(res, res2);

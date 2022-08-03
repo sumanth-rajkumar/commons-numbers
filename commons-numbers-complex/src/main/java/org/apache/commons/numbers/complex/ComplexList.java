@@ -24,7 +24,7 @@ import java.util.List;
 
 
 
-public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexVector {
+public class ComplexList extends AbstractList<ComplexDouble> implements List<ComplexDouble>, ComplexVector{
     /** TODO. */
     private static final double[] DEFAULT_EMPTY = {};
     /** TODO. */
@@ -288,26 +288,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
 
     }
 
-    @Override
-    public final Complex remove(int index) {
-        rangeCheck(index);
 
-        modCount++;
-        Complex oldValue = Complex.ofCartesian(realParts[index], imaginaryParts[index]);
-
-        int numMoved = size - index - 1;
-        if (numMoved > 0) {
-            System.arraycopy(realParts, index + 1, realParts, index,
-                numMoved);
-            System.arraycopy(imaginaryParts, index + 1, imaginaryParts, index,
-                numMoved);
-        }
-        // clear to let GC do its work
-        realParts[--size] = 0;
-        imaginaryParts[--size] = 0;
-
-        return oldValue;
-    }
 
     @Override
     public final void clear() {
@@ -557,20 +538,20 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
 
 
     public final Complex forEach(int index, ComplexUnaryOperator operator) {
-        return (Complex) forEach(index, operator, ComplexConstructor.D_COMPLEX_RESULT);
+        return (Complex) forEach(index, operator, ComplexSink.D_COMPLEX_RESULT);
     }
 
-    public final ComplexDouble forEach(int index, ComplexUnaryOperator operator, ComplexConstructor<ComplexDouble> result) {
+    public final ComplexDouble forEach(int index, ComplexUnaryOperator operator, ComplexSink<ComplexDouble> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], result);
     }
 
     public final Complex forEach(int index, Complex operand, ComplexBinaryOperator operator) {
-        return (Complex) forEach(index, operand, operator, ComplexConstructor.D_COMPLEX_RESULT);
+        return (Complex) forEach(index, operand, operator, ComplexSink.D_COMPLEX_RESULT);
     }
 
     public final ComplexDouble forEach(int index, Complex operand, ComplexBinaryOperator operator,
-                                       ComplexConstructor<ComplexDouble> result) {
+                                       ComplexSink<ComplexDouble> result) {
         this.rangeCheck(index);
         return operator.apply(this.realParts[index], this.imaginaryParts[index], operand.real(),
             operand.imag(), result);
@@ -609,7 +590,7 @@ public class ComplexList extends AbstractList<ComplexDouble> implements List<Com
             operator);
     }
 
-    private static final class Cursor  implements ComplexDouble, ComplexConstructor<Void> {
+    private static final class Cursor  implements ComplexDouble, ComplexSink<Void> {
         /**
          * To do.
         */

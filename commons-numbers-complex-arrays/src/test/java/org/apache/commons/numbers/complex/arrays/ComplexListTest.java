@@ -191,12 +191,16 @@ public class ComplexListTest {
     @Test
     void testReplaceAllComplexUnaryOperator() {
         List<Complex> objectList = generateList(10);
-        ComplexList actualList = new ComplexList();
-        actualList.addAll(objectList);
-        Assertions.assertThrows(NullPointerException.class, () -> actualList.replaceAll((ComplexUnaryOperator<Void>) null));
+        ComplexList actualList1 = new ComplexList();
+        ComplexList actualList2 = new ComplexList();
+        actualList1.addAll(objectList);
+        actualList2.addAll(objectList);
+        Assertions.assertThrows(NullPointerException.class, () -> actualList1.replaceAll((ComplexUnaryOperator<Void>) null));
         objectList.replaceAll(Complex::conj);
-        actualList.replaceAll(ComplexFunctions::conj);
-        Assertions.assertEquals(objectList, actualList);
+        actualList1.replaceAll(ComplexFunctions::conj);
+        Assertions.assertEquals(objectList, actualList1);
+        actualList2.replaceAll(ComplexFunctions::conj, 7);
+        Assertions.assertEquals(objectList, actualList2);
     }
 
     @Test
@@ -205,22 +209,30 @@ public class ComplexListTest {
         double r = 2;
         double i = 3;
         Complex multiplier = Complex.ofCartesian(r, i);
-        ComplexList actualList = new ComplexList();
-        actualList.addAll(objectList);
+        ComplexList actualList1 = new ComplexList();
+        ComplexList actualList2 = new ComplexList();
+        actualList1.addAll(objectList);
+        actualList2.addAll(objectList);
         objectList.replaceAll(c -> c.multiply(multiplier));
-        actualList.replaceAll((x, y, action) -> ComplexFunctions.multiply(x, y, r, i, action));
-        Assertions.assertEquals(objectList, actualList);
+        actualList1.replaceAll((x, y, action) -> ComplexFunctions.multiply(x, y, r, i, action));
+        Assertions.assertEquals(objectList, actualList1);
+        actualList2.replaceAll((x, y, action) -> ComplexFunctions.multiply(x, y, r, i, action), 7);
+        Assertions.assertEquals(objectList, actualList2);
     }
 
     @Test
     void testReplaceAllComplexScalarFunction() {
         List<Complex> objectList = generateList(10);
         double factor = 2;
-        ComplexList actualList = new ComplexList();
-        actualList.addAll(objectList);
+        ComplexList actualList1 = new ComplexList();
+        ComplexList actualList2 = new ComplexList();
+        actualList1.addAll(objectList);
+        actualList2.addAll(objectList);
         objectList.replaceAll(c -> c.pow(factor));
-        actualList.replaceAll((x, y, action) -> ComplexFunctions.pow(x, y, factor, action));
-        Assertions.assertEquals(objectList, actualList);
+        actualList1.replaceAll((x, y, action) -> ComplexFunctions.pow(x, y, factor, action));
+        Assertions.assertEquals(objectList, actualList1);
+        actualList2.replaceAll((x, y, action) -> ComplexFunctions.pow(x, y, factor, action), 7);
+        Assertions.assertEquals(objectList, actualList2);
     }
 
     /**

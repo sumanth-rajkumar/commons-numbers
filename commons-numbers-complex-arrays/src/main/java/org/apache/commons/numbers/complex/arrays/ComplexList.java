@@ -25,6 +25,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Resizable-double array implementation of the List interface. Implements all optional list operations,
@@ -138,8 +141,9 @@ public class ComplexList extends AbstractList<Complex> {
 
     /**
      * Gets the complex number \( (a + i b) \) at the indexed position of the list.
-     *
+     * <p>
      * {@inheritDoc}
+     *
      * @return the complex number.
      */
     @Override
@@ -153,8 +157,8 @@ public class ComplexList extends AbstractList<Complex> {
      * Replaces the element at the specified position in this list with the specified element's
      * real and imaginary parts. No range checks are done.
      *
-     * @param index Index of the element to replace.
-     * @param real Real part \( a \) of the complex number \( (a +ib) \).
+     * @param index     Index of the element to replace.
+     * @param real      Real part \( a \) of the complex number \( (a +ib) \).
      * @param imaginary Imaginary part \( b \) of the complex number \( (a +ib) \).
      */
     private void setNoRangeCheck(int index, double real, double imaginary) {
@@ -327,6 +331,7 @@ public class ComplexList extends AbstractList<Complex> {
 
     /**
      * Replaces each element of the list with the result of applying the operator to that element.
+     *
      * @param operator The operator to apply to each element.
      * @throws ConcurrentModificationException if expected modCount isn't equal to modCount.
      */
@@ -335,7 +340,21 @@ public class ComplexList extends AbstractList<Complex> {
         final double[] parts = this.realAndImagParts;
         final int m = size;
         final int expectedModCount = modCount;
-        for (int i = 0; i < m; i++) {
+        replaceAllRange(operator, parts, 0, m, expectedModCount);
+        modCount++;
+    }
+    /**
+     * Replaces each element with the given range of the list with the result of applying the operator to that element.
+     *
+     * @param operator The operator to apply to each element.
+     * @param parts Backing double array.
+     * @param fromIndex Start index.
+     * @param toIndex End index.
+     * @param expectedModCount ModCount check for concurrent modification.
+     */
+    private void replaceAllRange(ComplexUnaryOperator<Void> operator, final double[] parts,
+                                 int fromIndex, int toIndex, int expectedModCount) {
+        for (int i = fromIndex; i < toIndex; i++) {
             final int index = i << 1;
             operator.apply(parts[index], parts[index + 1], (x, y) -> {
                 parts[index] = x;
@@ -346,6 +365,42 @@ public class ComplexList extends AbstractList<Complex> {
         // check for comodification
         if (modCount != expectedModCount) {
             throw new ConcurrentModificationException();
+        }
+    }
+
+    /**
+     * Replaces each element of the list with the result of applying the operator to that element.
+     * It breaks up the list based on given number and replaces elements of however many lists in parallel.
+     *
+     * @param operator The operator to apply to each element.
+     * @param parallelism The number of parallel lists to run.
+     * @throws ConcurrentModificationException if expected modCount isn't equal to modCount.
+     */
+    public void replaceAll(ComplexUnaryOperator<Void> operator, int parallelism) {
+        if (size < parallelism) {
+            replaceAll(operator);
+            return;
+        }
+
+        Objects.requireNonNull(operator);
+        final double[] parts = this.realAndImagParts;
+        final int m = size;
+        final int partitionSize =  m / parallelism;
+        final int mod = m % parallelism;
+        CompletableFuture[] futures = new CompletableFuture[parallelism];
+        int lastPartitionIndex = 0;
+        final int expectedModCount = modCount;
+        for (int partition = 0; partition < parallelism; partition++) {
+            final int fromIndex = lastPartitionIndex;
+            final int toIndex = fromIndex + partitionSize + ((partition < mod) ? 1 : 0);
+            lastPartitionIndex = toIndex;
+            futures[partition] = CompletableFuture.runAsync(() ->
+                replaceAllRange(operator, parts, fromIndex, toIndex, expectedModCount));
+        }
+        try {
+            CompletableFuture.allOf(futures).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new CompletionException("Exception running parallel replaceAll operation", e);
         }
         modCount++;
     }

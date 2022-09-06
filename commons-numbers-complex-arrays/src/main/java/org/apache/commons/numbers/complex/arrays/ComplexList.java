@@ -180,8 +180,8 @@ public class ComplexList extends AbstractList<Complex> {
      * Replaces the element at the specified position in this list with the specified element's
      * real and imaginary parts. No range checks are done.
      *
-     * @param index     Index of the element to replace.
-     * @param real      Real part \( a \) of the complex number \( (a +ib) \).
+     * @param index Index of the element to replace.
+     * @param real Real part \( a \) of the complex number \( (a +ib) \).
      * @param imaginary Imaginary part \( b \) of the complex number \( (a +ib) \).
      */
     private void setNoRangeCheck(int index, double real, double imaginary) {

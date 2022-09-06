@@ -18,6 +18,7 @@
 package org.apache.commons.numbers.complex.arrays;
 
 import org.apache.commons.numbers.complex.Complex;
+import org.apache.commons.numbers.complex.ComplexConsumer;
 import org.apache.commons.numbers.complex.ComplexFunctions;
 import org.apache.commons.numbers.complex.ComplexUnaryOperator;
 import org.junit.jupiter.api.Assertions;
@@ -199,8 +200,21 @@ public class ComplexListTest {
         objectList.replaceAll(Complex::conj);
         actualList1.replaceAll(ComplexFunctions::conj);
         Assertions.assertEquals(objectList, actualList1);
+        Assertions.assertThrows(NullPointerException.class, () -> actualList1.replaceAll((ComplexUnaryOperator<Void>) null, 7));
         actualList2.replaceAll(ComplexFunctions::conj, 7);
         Assertions.assertEquals(objectList, actualList2);
+
+        //testing branch condition (size < parallelism || parallelism == 0)
+        objectList.replaceAll(Complex::conj);
+        actualList2.replaceAll(ComplexFunctions::conj, 11);
+        Assertions.assertEquals(objectList, actualList2);
+
+        objectList.replaceAll(Complex::conj);
+        actualList2.replaceAll(ComplexFunctions::conj, 0);
+        Assertions.assertEquals(objectList, actualList2);
+
+        //testing branch condition (parallelism < 0)
+        Assertions.assertThrows(IllegalArgumentException.class, () -> actualList2.replaceAll(ComplexFunctions::conj, -2));
     }
 
     @Test
@@ -233,6 +247,71 @@ public class ComplexListTest {
         Assertions.assertEquals(objectList, actualList1);
         actualList2.replaceAll((x, y, action) -> ComplexFunctions.pow(x, y, factor, action), 7);
         Assertions.assertEquals(objectList, actualList2);
+    }
+
+    @Test
+    void testReplaceAllComplexConsumer() {
+        List<Complex> data = generateList(10);
+        ArrayList<Complex> actual = new ArrayList<>();
+        ComplexList expected = new ComplexList();
+        expected.addAll(data);
+        Assertions.assertThrows(NullPointerException.class, () -> expected.forEach((ComplexConsumer) null));
+        expected.forEach((real, imaginary) -> actual.add(Complex.ofCartesian(real, imaginary)));
+        Assertions.assertEquals(expected, actual);
+
+        //Testing case of when list is empty
+        List<Complex> data2 = new ArrayList<>();
+        ArrayList<Complex> actual2 = new ArrayList<>();
+        ComplexList expected2 = new ComplexList();
+        expected2.addAll(data2);
+        expected2.forEach((real, imaginary) -> actual2.add(Complex.ofCartesian(real, imaginary)));
+        Assertions.assertEquals(expected2, actual2);
+    }
+
+    @Test
+    void testGetRealAndImaginary() {
+        ComplexList list = new ComplexList();
+        list.add(Complex.ofCartesian(42, 13));
+        list.addAll(1, list);
+        list.addAll(list);
+        list.set(2, Complex.ofCartesian(200, 1));
+        for (int i = 0; i < list.size(); i++) {
+            Assertions.assertEquals(list.get(i).getReal(), list.getReal(i));
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Assertions.assertEquals(list.get(i).getImaginary(), list.getImaginary(i));
+        }
+    }
+
+    @Test
+    void testSetRealAndImaginary() {
+        ComplexList list = new ComplexList();
+        list.add(Complex.ofCartesian(42, 13));
+        list.addAll(1, list);
+        list.addAll(list);
+        list.setReal(2, 200);
+        list.setImaginary(2, 1);
+        Assertions.assertEquals(Complex.ofCartesian(200, 1), list.get(2));
+    }
+
+    @Test
+    void testToArrayRealAndImaginary() {
+        ComplexList list = new ComplexList();
+        list.add(Complex.ofCartesian(42, 13));
+        list.addAll(1, list);
+        list.addAll(list);
+        list.set(2, Complex.ofCartesian(200, 1));
+
+        double[] expectedReal = {42, 42, 200, 42};
+        double[] actualReal = list.toArrayReal();
+        for (int i = 0; i < expectedReal.length; i++) {
+            Assertions.assertEquals(expectedReal[i], actualReal[i]);
+        }
+        double[] expectedImaginary = {13, 13, 1, 13};
+        double[] actualImaginary = list.toArrayImaginary();
+        for (int i = 0; i < expectedImaginary.length; i++) {
+            Assertions.assertEquals(expectedImaginary[i], actualImaginary[i]);
+        }
     }
 
     /**

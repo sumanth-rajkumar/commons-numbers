@@ -18,6 +18,7 @@
 package org.apache.commons.numbers.complex.arrays;
 
 import org.apache.commons.numbers.complex.Complex;
+import org.apache.commons.numbers.complex.ComplexConsumer;
 import org.apache.commons.numbers.complex.ComplexUnaryOperator;
 
 import java.util.AbstractList;
@@ -154,6 +155,28 @@ public class ComplexList extends AbstractList<Complex> {
     }
 
     /**
+     * TODO.
+     * @param index TODO.
+     * @return TODO.
+     */
+    public double getReal(int index) {
+        rangeCheck(index);
+        final int i = index << 1;
+        return realAndImagParts[i];
+    }
+
+    /**
+     * TODO.
+     * @param index TODO.
+     * @return TODO.
+     */
+    public double getImaginary(int index) {
+        rangeCheck(index);
+        final int i = index << 1;
+        return realAndImagParts[i + 1];
+    }
+
+    /**
      * Replaces the element at the specified position in this list with the specified element's
      * real and imaginary parts. No range checks are done.
      *
@@ -179,6 +202,56 @@ public class ComplexList extends AbstractList<Complex> {
         final Complex oldValue = Complex.ofCartesian(realAndImagParts[i], realAndImagParts[i + 1]);
         setNoRangeCheck(index, element.getReal(), element.getImaginary());
         return oldValue;
+    }
+
+    /**
+     * TODO.
+     * @param index TODO.
+     * @param real TODO.
+     */
+    public void setReal(int index, double real) {
+        rangeCheck(index);
+        final int i = index << 1;
+        realAndImagParts[i] = real;
+    }
+
+    /**
+     * TODO.
+     * @param index TODO.
+     * @param imaginary TODO.
+     */
+    public void setImaginary(int index, double imaginary) {
+        rangeCheck(index);
+        final int i = index << 1;
+        realAndImagParts[i + 1] = imaginary;
+    }
+
+    /**
+     * TODO.
+     * @return TODO.
+     */
+    double[] toArrayReal() {
+        final int length = size;
+        double[] real = new double[length];
+        for (int i = 0; i < length; i++) {
+            final int index = i << 1;
+            real[i] = realAndImagParts[index];
+        }
+        return real;
+    }
+
+    /**
+     * TODO.
+     * @return TODO.
+     */
+    double[] toArrayImaginary() {
+        final int length = size;
+        double[] imag = new double[length];
+        for (int i = 0; i < length; i++) {
+            final int index = i << 1;
+            imag[i] = realAndImagParts[index + 1];
+        }
+        return imag;
     }
 
     /**
@@ -343,6 +416,7 @@ public class ComplexList extends AbstractList<Complex> {
         replaceAllRange(operator, parts, 0, m, expectedModCount);
         modCount++;
     }
+
     /**
      * Replaces each element with the given range of the list with the result of applying the operator to that element.
      *
@@ -375,13 +449,17 @@ public class ComplexList extends AbstractList<Complex> {
      * @param operator The operator to apply to each element.
      * @param parallelism The number of parallel lists to run.
      * @throws ConcurrentModificationException if expected modCount isn't equal to modCount.
+     * @throws IllegalArgumentException if parallelism number is negative.
      */
     public void replaceAll(ComplexUnaryOperator<Void> operator, int parallelism) {
-        if (size < parallelism) {
+        Objects.requireNonNull(operator);
+        if (size < parallelism || parallelism == 0) {
             replaceAll(operator);
             return;
         }
-
+        if (parallelism < 0) {
+            throw new IllegalArgumentException("Parallelism can't be negative");
+        }
         Objects.requireNonNull(operator);
         final double[] parts = this.realAndImagParts;
         final int m = size;
@@ -401,6 +479,26 @@ public class ComplexList extends AbstractList<Complex> {
             CompletableFuture.allOf(futures).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new CompletionException("Exception running parallel replaceAll operation", e);
+        }
+        modCount++;
+    }
+
+    /**
+     * TODO.
+     * @param action TODO.
+     */
+    public void forEach(ComplexConsumer action) {
+        Objects.requireNonNull(action);
+        final double[] parts = this.realAndImagParts;
+        final int m = size;
+        final int expectedModCount = modCount;
+        for (int i = 0; i < m; i++) {
+            final int index = i << 1;
+            action.apply(parts[index], parts[index + 1]);
+        }
+        // check for comodification
+        if (modCount != expectedModCount) {
+            throw new ConcurrentModificationException();
         }
         modCount++;
     }

@@ -232,8 +232,8 @@ public abstract class ComplexList extends AbstractList<Complex> {
      * Constructs an empty interleaved list up to the specified capacity without a memory reallocation.
      *
      * @param capacity Capacity of interleaved list.
-     * @throws IllegalArgumentException if the {@code capacity} is greater than {@code MAX_CAPACITY}.
      * @return ComplexList object.
+     * @throws IllegalArgumentException if the {@code capacity} is greater than {@code MAX_CAPACITY}.
      */
     public static ComplexList interleaved(int capacity) {
         return new ComplexInterleavedList(capacity);
@@ -245,6 +245,16 @@ public abstract class ComplexList extends AbstractList<Complex> {
      */
     public static ComplexList interleaved() {
         return new ComplexInterleavedList();
+    }
+
+    /**
+     * Constructs an interleaved list using the specified double array.
+     * @param data Specified backing double array.
+     * @return ComplexList object.
+     * @throws IllegalArgumentException if the specified double array doesn't have an even amount of doubles.
+     */
+    public static ComplexList from(double[] data) {
+        return new ComplexInterleavedList(data);
     }
 
     /**
@@ -269,7 +279,7 @@ public abstract class ComplexList extends AbstractList<Complex> {
         private double[] realAndImagParts;
 
         /**
-         * Constructs an empty list up to the specified capacity without a memory reallocation.
+         * Constructs an empty interleaved list up to the specified capacity without a memory reallocation.
          *
          * @param capacity Capacity of list.
          * @throws IllegalArgumentException if the {@code capacity} is greater than {@code MAX_CAPACITY}.
@@ -283,10 +293,23 @@ public abstract class ComplexList extends AbstractList<Complex> {
         }
 
         /**
-         * Constructs an empty list.
+         * Constructs an empty interleaved list.
          */
         ComplexInterleavedList() {
             realAndImagParts = new double[DEFAULT_CAPACITY * 2];
+        }
+
+        /**
+         * Constructs an interleaved list using the specified double array.
+         * @param fromArray Specified backing double array.
+         * @throws IllegalArgumentException if the specified double array doesn't have an even amount of doubles.
+         */
+        ComplexInterleavedList(double[] fromArray) {
+            if (fromArray.length % 2 != 0) {
+                throw new IllegalArgumentException("Length of array has to be even");
+            }
+            realAndImagParts = fromArray;
+            size = fromArray.length >> 1;
         }
 
         /**

@@ -38,6 +38,17 @@ public class ComplexListTest {
     private static final int MAX_CAPACITY = (Integer.MAX_VALUE - 9) / 2;
 
     @Test
+    void testFromWithArrayParameter() {
+        double[] fromArray1 = ThreadLocalRandom.current().doubles(6, -Math.PI, Math.PI).toArray();
+        ComplexList list = ComplexList.from(fromArray1);
+        for (int i = 0; i < fromArray1.length >> 1; i++) {
+            Assertions.assertEquals(Complex.ofCartesian(fromArray1[i * 2], fromArray1[(i * 2) + 1]), list.get(i));
+        }
+        double[] fromArray2 = ThreadLocalRandom.current().doubles(5, -Math.PI, Math.PI).toArray();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ComplexList.from(fromArray2));
+    }
+
+    @Test
     void testGetAndSetMethod() {
         assertListOperation(list -> {
             list.add(Complex.ofCartesian(42, 13));
@@ -161,7 +172,7 @@ public class ComplexListTest {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 10})
-    void testConstructor(int size) {
+    void testInterleaved(int size) {
         List<Complex> l1 = new ArrayList<>(size);
         List<Complex> l2 = ComplexList.interleaved(size);
         Assertions.assertEquals(l1, l2);
@@ -287,7 +298,7 @@ public class ComplexListTest {
         double[] expectedReal = list.stream().mapToDouble(Complex::getReal).toArray();
         double[] actualReal = list.toArrayReal();
         Assertions.assertArrayEquals(expectedReal, actualReal);
-        double[] expectedImaginary =  list.stream().mapToDouble(Complex::getImaginary).toArray();
+        double[] expectedImaginary = list.stream().mapToDouble(Complex::getImaginary).toArray();
         double[] actualImaginary = list.toArrayImaginary();
         Assertions.assertArrayEquals(expectedImaginary, actualImaginary);
     }
